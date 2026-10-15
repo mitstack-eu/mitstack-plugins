@@ -1,0 +1,14 @@
+{
+  "name": "mitstack",
+  "description": "mitstack's plugin marketplace, holding the mitstack plugin for building and running apps on mitstack from your AI tool.",
+  "owner": {
+    "name": "mitstack",
+    "url": "https://github.com/mitstack-eu"
+  },
+  "plugins": [
+    {
+      "name": "mitstack",
+      "source": "./plugins/mitstack"
+    }
+  ]
+}
