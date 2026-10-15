@@ -1,0 +1,14 @@
+{
+  "name": "mitstack",
+  "displayName": "mitstack",
+  "version": "0.1.0",
+  "description": "Connects to mitstack's MCP server and walks you from an empty org to a live app.",
+  "author": {
+    "name": "mitstack",
+    "url": "https://github.com/mitstack-eu"
+  },
+  "homepage": "https://github.com/mitstack-eu/mitstack-plugins",
+  "repository": "https://github.com/mitstack-eu/mitstack-plugins",
+  "license": "Apache-2.0",
+  "keywords": ["mitstack", "mcp", "apps", "deploy"]
+}

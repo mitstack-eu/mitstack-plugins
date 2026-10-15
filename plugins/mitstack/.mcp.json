@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mitstack": {
+      "type": "http",
+      "url": "https://api.mitstack.dev/v1/mcp"
+    }
+  }
+}

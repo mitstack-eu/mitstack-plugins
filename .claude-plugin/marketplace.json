@@ -1,0 +1,15 @@
+{
+  "name": "mitstack",
+  "description": "mitstack's plugin marketplace, holding the mitstack plugin for building and running apps on mitstack from your AI tool.",
+  "owner": {
+    "name": "mitstack",
+    "url": "https://github.com/mitstack-eu"
+  },
+  "plugins": [
+    {
+      "name": "mitstack",
+      "source": "./plugins/mitstack",
+      "description": "Connects to mitstack's MCP server and walks you from an empty org to a live app."
+    }
+  ]
+}

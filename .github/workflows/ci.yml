@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: plugin validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Install the plugin validator
+        run: npm install --global @anthropic-ai/claude-code@2.1.300
+      - name: Validate the marketplace
+        run: claude plugin validate --strict .
+      - name: Validate each plugin
+        run: |
+          for plugin in plugins/*/; do
+            claude plugin validate --strict "$plugin"
+          done
+
+  names:
+    name: plugin names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test the name check
+        run: scripts/check-plugin-names_test.sh
+      - name: Check the plugin names
+        run: scripts/check-plugin-names.sh
