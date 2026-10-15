@@ -29,10 +29,10 @@ https://api.mitstack.dev/connections, which needs an owner or admin role.
 There they choose Connect a service, find the provider's card, and paste the
 key into it.
 
-| Provider | Its card on the Connections page | Where the builder gets the key |
-|---|---|---|
-| Mollie | Always there. mitstack checks the key with Mollie as it is saved and refuses one Mollie rejects | The Mollie Dashboard, under Developers, then API keys |
-| Sendcloud | There once a block visible to the org declares Sendcloud, and the card names each field it needs | Sendcloud's own settings |
+| Provider | Its card on the Connections page |
+|---|---|
+| Mollie | Always there. The key comes from the Mollie Dashboard, under Developers, then API keys. mitstack checks it with Mollie as it is saved and refuses one Mollie rejects |
+| Sendcloud | There once a block visible to the org declares Sendcloud, and the card names each field it asks for. With no such block there is no card, and the step stops as above |
 
 ## Subscribe the app to the block
 

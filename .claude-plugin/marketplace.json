@@ -8,8 +8,7 @@
   "plugins": [
     {
       "name": "mitstack",
-      "source": "./plugins/mitstack",
-      "description": "Connects to mitstack's MCP server and walks you from an empty org to a live app."
+      "source": "./plugins/mitstack"
     }
   ]
 }
