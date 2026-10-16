@@ -30,6 +30,7 @@ from then on.
 | `build-your-app` | Writing the app's code in its repository and deploying it through a pull request |
 | `connect-mollie-and-sendcloud` | Connecting payments and shipping without the key passing through Claude Code |
 | `check-app-status` | Whether the stack has finished and whether the latest change deployed |
+| `build-a-block` | Creating a block that makes GitHub resources, writing its code from your description, and explaining each conformance-suite failure |
 
 Claude Code picks a skill when your request matches it, and you can also start
 one by name, as in `/mitstack:create-an-app`.
