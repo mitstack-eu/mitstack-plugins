@@ -28,15 +28,12 @@ Check the local tools, and fix what is missing before step 1:
 ```sh
 go version
 gh auth status
-go env -w GOPRIVATE=github.com/mitstack-eu
-gh auth setup-git
 ```
 
 `go version` must name Go 1.22 or later, and must not contain `gccgo`, which
-cannot build the kit. The kit, the library every block builds on, is a private
-Go module. `GOPRIVATE` tells Go to fetch it straight from GitHub, and
-`go env -w` keeps that setting for every later shell. `gh auth setup-git` lets
-the fetch use the builder's GitHub login.
+cannot build the kit, the Go library every block builds on. `gh auth status`
+must show the builder signed in, because the block's repository is private and
+`gh` clones it with their GitHub login.
 
 ## Steps
 
@@ -134,7 +131,7 @@ text against this table.
 | `resources` | `failed:` | One of the three methods returned an error, quoted after the colon | Fix the call that error names |
 | `resources` | `has no TestDeclaredResources test` | `declared_resources_test.go`, the scaffold's test that drives each resource against the fake GitHub, is missing | Add it back as the scaffold wrote it: `git checkout $(git rev-list --max-parents=0 HEAD) -- declared_resources_test.go` |
 | Several at once | `[build failed]` | The block does not compile | Run `go vet ./...`, fix the first error it names, and run the suite again |
-| Several at once | `[setup failed]` | Go cannot resolve a module | Check that `go env GOPRIVATE` prints `github.com/mitstack-eu`, then run `go mod tidy` |
+| Several at once | `[setup failed]` | Go cannot resolve a module | Run `go mod tidy`, then run the suite again |
 | `trust-plumbing` | `has no go.mod` or `is missing manifest.yaml` | The suite ran outside the block's root | Run it from the clone's root |
 | `trust-plumbing` | `redeclares kit-owned symbol` | A function the kit owns is defined again in the block | Delete that function and use the kit's |
 | `trust-plumbing` | `ghapi.Base` or `raw apiBase` | Code builds its own GitHub address | Send every GitHub call through `callGitHub` |
