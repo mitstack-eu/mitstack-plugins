@@ -136,7 +136,8 @@ text against this table.
 | `trust-plumbing` | `redeclares kit-owned symbol` | A function the kit owns is defined again in the block | Delete that function and use the kit's |
 | `trust-plumbing` | `ghapi.Base` or `raw apiBase` | Code builds its own GitHub address | Send every GitHub call through `callGitHub` |
 | `secret-safety` | `TestNoSecretLeak` | A secret, such as the GitHub token, reached a response or a log | Keep every value from `d.Secrets` out of errors, outputs and log lines |
-| `teardown`, `contract`, `deliverable`, `manifest` or `naming` | Anything | A file the scaffold owns was changed or deleted | Restore it from the first commit with `git checkout $(git rev-list --max-parents=0 HEAD) -- <file>` |
+| `teardown` | `is missing a func TestUnsubscribeDeletes` | The scaffold's `teardown_test.go` is missing | Restore it from the first commit, as in the row below |
+| `contract`, `deliverable`, `manifest` or `naming` | Anything | A file the scaffold owns was changed or deleted | Restore it from the first commit with `git checkout $(git rev-list --max-parents=0 HEAD) -- <file>` |
 
 When a line matches no row, read the whole line to the builder, say that this
 skill does not cover it, and give the suite's name.

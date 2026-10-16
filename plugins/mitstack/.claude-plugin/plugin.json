@@ -1,7 +1,7 @@
 {
   "name": "mitstack",
   "displayName": "mitstack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Connects to mitstack's MCP server and walks you from an empty org to a live app.",
   "author": {
     "name": "mitstack",
