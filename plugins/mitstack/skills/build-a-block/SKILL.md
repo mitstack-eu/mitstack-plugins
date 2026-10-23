@@ -103,9 +103,8 @@ Send every GitHub call through the scaffold's
 The example's `suffix` field ends each repository's name, so give two
 repositories in one block different suffixes.
 
-Check by reading the code that `Ensure` tags, because blockverify at `v2.3.1`
-passes a block that never does. The tag carries the subscription's id, and it
-is how anything listing one subscription's resources finds this one.
+The tag carries the subscription's id, and it is how anything listing one
+subscription's resources finds this one.
 
 The builder writes no credential and no generated value. The GitHub token
 arrives with each call, and the resource's name comes from the subscription.
@@ -126,6 +125,7 @@ text against this table.
 | `resources` | `still observed present after the provider lost it` | `Observe` reports what `Ensure` did instead of asking GitHub | Make `Observe` call GitHub each time and answer absent on a 404 |
 | `resources` | `after unsubscribe, want absent` | `Delete` returned success but removed nothing | Make `Delete` send GitHub's delete call for the identity, and accept 204 or 404 |
 | `resources` | `has no entry for it` | The `resources` table lacks a resource the manifest declares | Add the resource's name and its type to the `resources` table |
+| `resources` | `untagged` | `Ensure` created the resource without tagging it, so the platform can neither find it nor tear it down | Call `tagRepository(ctx, gh, repo, d.SubscriptionID)` in `Ensure` once the repository exists |
 | `resources` | `with no identity` | `Ensure` returned an empty identity | Return the identity, such as `{"repo": "owner/name"}`, from `Ensure` |
 | `resources` | `did not name it in replaces` | An upgrade made a new resource instead of finding the existing one | Make `Ensure` derive the same name on every call and reuse what it finds |
 | `resources` | `failed:` | One of the three methods returned an error, quoted after the colon | Fix the call that error names |
