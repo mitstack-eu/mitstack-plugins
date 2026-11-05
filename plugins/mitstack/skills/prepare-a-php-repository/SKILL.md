@@ -206,9 +206,8 @@ line, and past twenty names give the first ten and the total.
 
 Mark a fix the builder declines with `(declined)` at the end of its line. A fix
 with no command below is never offered, and its line ends `(your own edit)`.
-End the report with a line
-naming the fixes made, or `Fixes made: none`. When you stop part way, also list
-the checks that did not run, each as `did not run`.
+End the report with a line naming the fixes made, or `Fixes made: none`. When
+you stop part way, also list the checks that did not run, each as `did not run`.
 
 ## Offer the fixes
 
