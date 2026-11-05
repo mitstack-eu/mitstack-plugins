@@ -30,6 +30,7 @@ from then on.
 | `build-your-app` | Writing the app's code in its repository and deploying it through a pull request |
 | `connect-mollie-and-sendcloud` | Connecting payments and shipping without the key passing through Claude Code |
 | `check-app-status` | Whether the stack has finished and whether the latest change deployed |
+| `prepare-a-php-repository` | Checking an existing PHP repository on your own machine, ending in a report with no code in it, with nothing sent to mitstack |
 | `build-a-block` | Creating a block, the service that makes GitHub resources for each app, writing its code from your description, and explaining each failure of `blockverify`, the check a block must pass |
 
 Claude Code picks a skill when your request matches it, and you can also start
