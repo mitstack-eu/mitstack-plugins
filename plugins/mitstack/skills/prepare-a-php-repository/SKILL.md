@@ -56,16 +56,16 @@ No dry run reads your code. A dry run is the check mitstack runs before it
 creates anything, and you reach it once you have an account. The console's
 Create wizard, at <https://api.mitstack.dev>, runs one as you fill in the app's
 settings. It reads only the `Dockerfile` and `.env.example` on your
-repository's default branch. So do a dry run for an existing app, through
-mitstack's MCP tools for AI assistants, and subscribe, the step that adds the
-stack to an app.
+repository's default branch. A dry run for an existing app, through mitstack's
+MCP tools for AI assistants, reads the same two files, and so does subscribe,
+the step that adds the stack to an app.
 
 The verdict on everything else is the first build, and then the app's health on
 the host. That build starts when you create the app from your repository in the
 console, whose Guide column walks you through each step. Its result shows as
 the `managed-ci` check on your pull request, and the check's log lives in the
 app's build repository, `<app>-ci`, beside yours. The first deploy also sets up
-a new database, which can take many minutes.
+a new database.
 
 The build runs a series of gates, each one a check that can fail it, such as
 `gitleaks` for secrets, Semgrep for code and Trivy for the image. This file can
@@ -96,7 +96,7 @@ say A5 calls-zip; src '\bZipArchive\b'
 say A5 calls-other; src '\b(SoapClient|bcadd|bcsub|bcmul|bcdiv|gmp_[a-z]+|ldap_[a-z]+|exif_[a-z_]+|socket_create|XSLTProcessor|pcntl_[a-z]+)\b'
 say A6 removed-functions; src '\b(mysql_[a-z_]+|ereg[i]?|split|mcrypt_[a-z_]+|create_function)[[:space:]]*\('
 say B1 first-page-setup; git grep -nIE "(header[[:space:]]*\([[:space:]]*['\"]Location|install\.php|setup\.php)" -- index.php public/index.php | cut -d: -f1,2
-say C1 served-root; git ls-files public/index.php
+say C1 served-root; git ls-files public | head -1
 say C2 reachable-files; git ls-files | grep -Ev '\.(php|inc|phtml|css|js|map|png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot|html?)$' | grep -Ev '(^|/)\.|^vendor/|/vendor/|^node_modules/|composer\.(json|lock)$' | head -40
 say C3 short-open-tags; src '<\?([[:space:]]|$)'
 say C4 export-ignore-lines; [ -f .gitattributes ] && grep 'export-ignore' .gitattributes | cut -d' ' -f1
@@ -207,13 +207,14 @@ three files and the total. Put a section of names, such as variables, on one
 line, and past twenty names give the first ten and the total.
 
 Mark a fix the builder declines with `(declined)` at the end of its line. A fix
-with no command below is never offered, and its line ends `(your own edit)`.
+with no command below is reported and not applied, and its line ends
+`(your own edit)`.
 End the report with a line naming the fixes made, or `Fixes made: none`. When
 you stop part way, also list the checks that did not run, each as `did not run`.
 
 ## Offer the fixes
 
-Offer each `fix` line to the builder, one at a time. Apply a fix only after a
+Offer each `fix` line that has a command below to the builder, one at a time. Apply a fix only after a
 yes to that line. A declined fix changes nothing, and it stays in the report.
 
 These commands make each change without printing a value. Replace `FILE`,
@@ -224,7 +225,7 @@ These commands make each change without printing a value. Replace `FILE`,
 | Read a password assigned to a variable from the environment | `perl -pi -e 's/=\s*(["\x27]).*?\1\s*;/= getenv(\x27DB_PASSWORD\x27);/ if $. == LINE' FILE` |
 | Write to the system's temporary folder | `perl -pi -e 's/__DIR__\s*\.\s*\x27\/[^\x27]*?([^\x27\/]+)\x27/sys_get_temp_dir() . \x27\/$1\x27/ if $. == LINE' FILE` |
 | Change short open tags | `perl -pi -e 's/<\?(?=\s|$)/<?php/g' FILE` |
-| Keep a file or folder from the image and the web, through the `.dockerignore` at the root, which counts once committed | `printf '%s\n' 'PATH' >> .dockerignore` |
+| Keep a file or folder from the image and the web, through the `.dockerignore` at the root, which counts once committed | `{ [ -s .dockerignore ] && [ -n "$(tail -c1 .dockerignore)" ] && echo; printf '%s\n' 'PATH'; } >> .dockerignore` |
 | Ask for an extension with no `composer.json` yet, such as `gd` | `printf '{\n    "require": {\n        "ext-gd": "*"\n    }\n}\n' > composer.json` |
 
 A `.dockerignore` entry is a path from the root of the checkout, such as
