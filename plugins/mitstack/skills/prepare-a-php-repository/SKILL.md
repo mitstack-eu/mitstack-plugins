@@ -24,7 +24,7 @@ container, and `docker-mariadb` runs your database. Every check was read from
 these block versions, and the report repeats this line so its reader knows
 which versions its verdicts describe:
 
-`Read at managed-ci 2.14.1, docker-app-slice 0.10.1, docker-mariadb 0.4.0, app-scaffold 2.7.2.`
+`Read at managed-ci 2.15.1, docker-app-slice 0.11.0, docker-mariadb 0.5.0, app-scaffold 2.8.0.`
 
 ## What leaves your machine
 
@@ -55,16 +55,17 @@ Four rules keep your code and your values out of what is read:
 No dry run reads your code. A dry run is the check mitstack runs before it
 creates anything, and you reach it once you have an account. The console's
 Create wizard, at <https://api.mitstack.dev>, runs one as you fill in the app's
-settings, and it reads no repository today. Two other steps read only
-`Dockerfile` and `.env.example`: a dry run for an existing app, through mitstack's
-MCP tools for AI assistants, and subscribe, the step that adds the stack to an
-app.
+settings. It reads only the `Dockerfile` and `.env.example` on your
+repository's default branch. So do a dry run for an existing app, through
+mitstack's MCP tools for AI assistants, and subscribe, the step that adds the
+stack to an app.
 
 The verdict on everything else is the first build, and then the app's health on
 the host. That build starts when you create the app from your repository in the
 console, whose Guide column walks you through each step. Its result shows as
 the `managed-ci` check on your pull request, and the check's log lives in the
-app's build repository, `<app>-ci`, beside yours.
+app's build repository, `<app>-ci`, beside yours. The first deploy also sets up
+a new database, which can take many minutes.
 
 The build runs a series of gates, each one a check that can fail it, such as
 `gitleaks` for secrets, Semgrep for code and Trivy for the image. This file can
@@ -101,7 +102,7 @@ say C3 short-open-tags; src '<\?([[:space:]]|$)'
 say C4 export-ignore-lines; [ -f .gitattributes ] && grep 'export-ignore' .gitattributes | cut -d' ' -f1
 say D1 ignored-files; git status --ignored --short | sed -n 's/^!! //p' | grep -Ev '(^|/)(vendor|node_modules)/?$' | head -40
 say D2 submodules; git ls-files -s | sed -n 's/^160000 [0-9a-f]* [0-9]*[[:space:]]//p'
-say D3 dockerignore; git ls-files .dockerignore
+say D3 dockerignore; git show HEAD:.dockerignore 2>/dev/null | grep -vE '^[[:space:]]*(#|$)' | head -40
 say E1 writes; src '\b(file_put_contents|fopen|mkdir|touch|tempnam|move_uploaded_file|rename|copy|unlink|session_save_path)[[:space:]]*\('
 say E2 writes-in-own-folder; src '\b(file_put_contents|fopen|mkdir|touch|move_uploaded_file)[[:space:]]*\(.*(__DIR__|dirname|getcwd|\./)'
 say E3 folders-named-for-writing; git ls-files | sed -n -E 's#^((cache|tmp|temp|uploads?|files|logs?|data|sessions|storage|bootstrap/cache)/).*#\1#p' | sort -u
@@ -146,20 +147,20 @@ how to read it. An empty section reads `ok`, unless its row says otherwise.
 | A6 | Functions PHP removed | A page calling `mysql_connect` or another removed function answers 500 with an empty page | Any hit: `fix`, move that call to `mysqli` or PDO. `split` may be a method of your own, so read the masked line first |
 | B1 | The health answer | `/` on port 8080 must answer below 400 with no setup step done first, or the deploy rolls back | A hit: `note`, `/` may send a new install to a setup page, so check what it answers. The answer itself reads `not read`, because the first deploy judges it |
 | C1 | The served folder | `public/` is served when it holds files, and the root otherwise | `note` naming which one |
-| C2 | What the web can reach | A root-served app serves every file in the image, except `vendor`, dot paths and `composer.json` and `composer.lock`. A `README.md` or a `Dockerfile` answers 200, and any `.php` file runs when requested | Listed files, of which the scan shows the first 40: `note`, with the fix of a `.dockerignore` entry for any you would not publish. Ask the builder, and a file they name reads `fix` |
+| C2 | What the web can reach | A root-served app serves every file in the image, except `vendor`, dot paths and `composer.json` and `composer.lock`. A `README.md` or a `Dockerfile` answers 200, and any `.php` file runs when requested | Listed files, of which the scan shows the first 40: `note`, with the fix of a `.dockerignore` entry for any you would not publish and the app does not read. Ask the builder, and a file they name reads `fix` |
 | C2 | A missing address | A missing address that is not a `.php` file answers with your `index.php`, so a missing page reads 200 | `note` |
 | C3 | Short open tags | The image's production `php.ini` turns them off, so a file opening with `<?` is sent to the browser as text, source and all | Any hit: `fix`, change `<?` to `<?php` |
-| C4 | `export-ignore` lines | These lines shape your release archives only, and a marked file reaches the image | No defect. On a root-served app: `note`, each marked file you commit is also reachable, so add a `.dockerignore` entry for any you would not publish |
+| C4 | `export-ignore` lines | These lines shape your release archives only, and a marked file reaches the image | No defect. On a root-served app: `note`, each marked file you commit is also reachable, so add a `.dockerignore` entry for any you would not publish and the app does not read |
 | D1 | Ignored files | The image holds the committed tree, so an ignored file is absent | Each listed file: `not read`, since only the builder knows whether the app needs it, with the fix of committing it or reading its values from the environment. A file like `.env` reads `note`, the image does not hold it, so its values must reach the app as secrets |
 | D2 | Submodules | A submodule's files are absent from the image | Any hit: `fix`, commit those files or install them through Composer |
-| D3 | `.dockerignore` | The file still applies to what the image holds | Present: `note`, since it can drop a file the app needs. Absent: `ok` |
-| E1, E2, E3 | Writes in its own folder | The image runs as `USER 33:33` and root owns the app, so a write in the app's folder fails. Only `storage` and `bootstrap/cache` go to that user, when present | An E2 hit outside those two folders: `fix`, write to the system's temporary folder, which that user can write to, or use a `Dockerfile` of your own that runs `chown -R 33:33` on the folder. An E3 folder other than those two: `note`, a write there fails. E1 hits whose target you cannot tell: one `not read` line per file |
-| E1, E3 | Files that outlive a deploy | The app's container holds no volume, so whatever it writes is lost on each deploy | Any file that must last, such as an upload: `fix`, keep it in the database or in outside storage |
+| D3 | `.dockerignore` | The image leaves out each file the committed `.dockerignore` lists. A listed file the app needs at run time is missing from the image, and the build still succeeds. A listed file that a `Dockerfile` of your own copies by name fails the build, naming that file | Entries listed: `note`, check each against the files the app reads at run time, because the build does not catch a missing one. None: `ok` |
+| E1, E2, E3 | Writes in its own folder | The image runs as `USER 33:33` and root owns the app. The `Dockerfile` a new app receives lets that user write only in the folders that `writablePaths` names, a setting in the Create wizard that lists folders by comma, such as `cache,var/log`. A write anywhere else in the app's folder fails. The build creates a listed folder your repository lacks, and fails if that user cannot write one | An E2 hit: `fix`, add its folder to `writablePaths`, or write to the system's temporary folder, which that user can write to. An E3 folder: `note`, a write there fails unless `writablePaths` names it. E1 hits whose target you cannot tell: one `not read` line per file |
+| E1, E3 | Files that outlive a deploy | Each deploy starts a new container, so whatever the app writes is lost on each deploy, in a `writablePaths` folder too | Any file that must last, such as an upload: `fix`, keep it in the database or in outside storage |
 | F1, F2 | A hard-coded database password | The host generates the password, so a hard-coded one cannot connect and answers error `1045`. A random-looking one stops the build first, at `gitleaks` | A hit on your app's database login: `fix`, read it from the environment. Any other hit, such as a test's: `note`, since `gitleaks` reads it too |
 | F3, F4 | How it reads its database | Five values (`host`, `port`, `dbName`, `username`, `password`) reach the app as `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` and `DB_PASSWORD`. The database is `app`, the user is `app`, and the host is the database container's name, so `localhost` cannot connect | An F3 hit on a database setting: `fix`. An F3 hit you cannot place, even from its masked line: `not read`. A name in F4 for one of those values under another name: `fix`, rename it through `docker-mariadb`'s `env` setting in the Create wizard, one entry per name, as `DB_PASS=password,DB_LOGIN=username` |
 | G1 | Schema and existing data | `releaseCommand`, a setting in the Create wizard, is one line of at most 1,000 printable characters, run on each new image before it serves. It can create your schema. No step imports an existing dump or existing files, so an app with data starts empty | Always `note`, in those words. Decide before you go live whether the app can start empty, because mitstack gives you no route for that data yet. A dump of your data that G1 lists: `fix`, add it to `.dockerignore`, since a committed one reaches the image and a root-served app's web. A schema file the app reads stays: `note`. Whether your migrations run on the host reads as `not read` |
-| G1 | The database engine | The database is MariaDB, at the version the `docker-mariadb` release sets. A migration written for MySQL may fail there, a failed `releaseCommand` stops the deploy, and on a first deploy the app does not start | Always `not read`, because only the first deploy runs them |
-| G2 | A foreign key's generated name | The name a database gives an unnamed foreign key differs between MySQL and MariaDB versions, so a migration that refers to `comments_ibfk_2` by name can stop on error `1091` | Any hit: `fix`, name the key when you create it, or look its name up in `information_schema` before you drop it |
+| G1 | The database engine | The database is MariaDB 12.3.3. A migration written for MySQL may fail there, a failed `releaseCommand` stops the deploy, and on a first deploy the app does not start | Always `not read`, because only the first deploy runs them |
+| G2 | A foreign key's generated name | MariaDB 12.3.3 names a foreign key created with no name `1`, `2` and so on, where MariaDB 11.8 and 12.0 named it like `comments_ibfk_2`. A migration that drops `comments_ibfk_2` by that name stops on error `1091`, and the deploy stops with it | Any hit: `fix`, look the name up before each drop. Read `CONSTRAINT_NAME` from `information_schema.KEY_COLUMN_USAGE` for the current database, that table and that column, where `REFERENCED_TABLE_NAME` is set, and drop each name it gives |
 | H1, H2, F4 | Secrets | A secret is a value your app reads and nobody should see, saved on the app's page in the console. Its name is lower-case letters, digits and hyphens, and it reaches the app upper-cased with underscores. A clash with a value the database gives is refused. A variable the app needs at start goes in `.env.example`, which the dry run reads, and its value is saved before the first image lands | An F4 name missing from H1, or any F4 name when `.env.example` is absent, other than a database value the row above covers: `fix`, add it to `.env.example`. A name with lower-case letters: `fix`, since no secret can give it. An H2 file: `fix`, stop committing it |
 | I1 to I7 | Code scan | Seven rules: `php-output-from-request`, `php-sql-from-request`, `php-command-from-request`, `php-code-evaluation`, `php-include-from-request`, `php-unserialize-from-request` and `php-weak-password-hash`. A finding fails the build | Any hit: `fix`. I1: pass the value through `htmlspecialchars()`. I2: bind it with `prepare`. I3: pass it through `escapeshellarg()`, or choose from a fixed list. I4: write the logic as code. I5: choose the file from a fixed list. I6: use `json_decode()`, or pass `['allowed_classes' => false]`. I7: use `password_hash()` and `password_verify()`. These searches read one line, and Semgrep follows a value across lines, so an empty section reads as `not read` |
 | None | Secrets and dependency scans | `gitleaks` reads the tree on each build and the whole history each Monday. Trivy refuses a fixable vulnerability of any severity, and `osv-scanner` refuses what its ignore lists do not hold | Always `not read`, because these need a network or the built image |
@@ -168,7 +169,7 @@ how to read it. An empty section reads `ok`, unless its row says otherwise.
 | K1, K3, K4 | The test gate | A `composer.json` within three levels runs `composer validate` and `composer install`, and any PHPUnit config beside it runs its suite, which needs `phpunit/phpunit` in `require-dev`. mitstack records a coverage floor for the app, which only rises | A config beside a K1 `composer.json` with no K4 hit in that folder: `fix`, add it to `require-dev`. A config with no `composer.json` beside it never runs: `note` |
 | K2 | The Node gate | A `package.json` within three levels runs `npm install`, or `npm ci` with a lockfile, and then its build and test scripts | `note` naming each folder |
 | K3 | The test database | `testSetupCommand` starts a throwaway MariaDB that hands over `DB_DATABASE` and `DB_USERNAME`, names that differ from the running app's `DB_NAME` and `DB_USER` | A suite that needs a database: `note`, read both pairs of names |
-| L1 | How a change lands | The default branch requires the `managed-ci` check on an up-to-date branch, and a direct push is refused, for an admin too. Your pull request merges itself once the check passes, and the merge deploys | Always `note`: send each change through a pull request |
+| L1 | How a change lands | The default branch requires the `managed-ci` check on an up-to-date branch, and a direct push is refused, for an admin too. Your pull request merges itself once the check passes and any review your branch requires is given, and the merge deploys | Always `note`: send each change through a pull request |
 | M1 | One container | The host runs one `web` service, so a cron job or a worker has no place to run | Any hit: `fix`, run that work inside a request or outside this host |
 | N1 | Files the scaffold writes | A first scaffold refuses to replace a file your branch already holds at a path it contributes | Any hit on a repository with no app yet: `fix`, rename or remove it. A contributed `Dockerfile` comes only when you hold none |
 | None | GitHub App | Whether the mitstack GitHub App is installed on your repository | Always `not read`, because a checkout cannot answer it |
@@ -191,7 +192,7 @@ A verdict is one of four words:
 Open the report with the versions line above, then list the lines:
 
 ```text
-Read at managed-ci 2.14.1, docker-app-slice 0.10.1, docker-mariadb 0.4.0, app-scaffold 2.7.2.
+Read at managed-ci 2.15.1, docker-app-slice 0.11.0, docker-mariadb 0.5.0, app-scaffold 2.8.0.
 A hard-coded database password | fix | settings.php:12 | read it from the environment as DB_PASSWORD
 Writes in its own folder | fix | export.php:30 | write to the system's temporary folder
 What the web can reach | fix | backup/notes.txt | add backup/ to .dockerignore
