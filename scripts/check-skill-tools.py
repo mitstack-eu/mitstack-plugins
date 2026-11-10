@@ -52,34 +52,39 @@ def paragraphs(text):
         yield start, "".join(lines).replace("\n", " ")
 
 
-def check_skill(path, tools, verbs):
+def check_skill(path, tools):
     text = path.read_text()
+    verbs = {name.split("_")[0] for name in tools}
     problems = []
 
     def report(offset, message):
-        problems.append(f"{path}:{text.count(chr(10), 0, offset) + 1}: {message}")
+        line = text.count("\n", 0, offset) + 1
+        problems.append(f"{path}:{line}: {message}")
+
+    def looks_like_a_tool(name):
+        return bool(SNAKE.match(name)) and name.split("_")[0] in verbs
 
     for start, para in paragraphs(text):
         prose = SPAN.sub(lambda m: " " * len(m.group(0)), para)
         for m in MISSING.finditer(prose):
-            report(start + m.start(), f'says "{" ".join(m.group(0).split())}"; name the served tool that answers it instead')
+            claim = " ".join(m.group(0).split())
+            report(start + m.start(), f'says "{claim}"; name the served tool that answers it instead')
 
         for m in SPAN.finditer(para):
             name = m.group(1)
-            if SNAKE.match(name) and name.split("_")[0] in verbs and name not in tools:
+            if looks_like_a_tool(name) and name not in tools:
                 report(start + m.start(), f"names the tool `{name}`, which the MCP server does not serve")
 
         for m in CALL.finditer(para):
             name = m.group(1).split()[0]
             if name not in tools:
-                if not (SNAKE.match(name) and name.split("_")[0] in verbs):
+                if not looks_like_a_tool(name):
                     report(start + m.start(), f"calls `{name}`, which the MCP server does not serve")
                 continue
             args = ARG_LIST.match(para, m.end())
             if not args:
                 continue
-            spans = [args.group(1)] + [a.group(1) for a in ARG_NEXT.finditer(args.group(2))]
-            for span in spans:
+            for span in [args.group(1)] + [a.group(1) for a in ARG_NEXT.finditer(args.group(2))]:
                 ident = IDENT.match(span.strip())
                 if ident and ident.group(1) not in tools[name]:
                     report(start + m.start(), f"calls `{name}` with `{ident.group(1)}`, an argument `{name}` does not take")
@@ -99,8 +104,7 @@ def main(argv):
         print(f"no SKILL.md found under {root}/plugins/*/skills/*/", file=sys.stderr)
         return 1
 
-    verbs = {name.split("_")[0] for name in tools}
-    problems = [p for skill in skills for p in check_skill(skill, tools, verbs)]
+    problems = [p for skill in skills for p in check_skill(skill, tools)]
     for problem in problems:
         print(problem, file=sys.stderr)
     if problems:
