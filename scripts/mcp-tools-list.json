@@ -1,0 +1,267 @@
+{
+  "source": "the tools/list answer of the MCP server code at platform commit 88a8e6b91296d92cae88d2b58285ce9f1b69c0cb",
+  "tools": [
+    {
+      "name": "list_blocks",
+      "inputSchema": {
+        "properties": {}
+      }
+    },
+    {
+      "name": "search_blocks",
+      "inputSchema": {
+        "properties": {
+          "provides": {},
+          "query": {},
+          "requires": {},
+          "tag": {}
+        }
+      }
+    },
+    {
+      "name": "get_manifest",
+      "inputSchema": {
+        "properties": {
+          "id": {}
+        }
+      }
+    },
+    {
+      "name": "validate_composition",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "appName": {},
+          "blockId": {},
+          "stackId": {}
+        }
+      }
+    },
+    {
+      "name": "plan_stack",
+      "inputSchema": {
+        "properties": {
+          "stackId": {}
+        }
+      }
+    },
+    {
+      "name": "create_stack",
+      "inputSchema": {
+        "properties": {
+          "blockIds": {},
+          "category": {},
+          "description": {},
+          "name": {}
+        }
+      }
+    },
+    {
+      "name": "subscribe",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "blockId": {},
+          "params": {},
+          "stackId": {},
+          "suppliedResources": {}
+        }
+      }
+    },
+    {
+      "name": "subscription_status",
+      "inputSchema": {
+        "properties": {
+          "stack": {},
+          "subscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "create_block",
+      "inputSchema": {
+        "properties": {
+          "capability": {},
+          "description": {},
+          "id": {},
+          "name": {},
+          "provides": {},
+          "requires": {},
+          "resources": {},
+          "version": {}
+        }
+      }
+    },
+    {
+      "name": "create_app",
+      "inputSchema": {
+        "properties": {
+          "envName": {},
+          "name": {},
+          "repo": {},
+          "stackId": {},
+          "team": {}
+        }
+      }
+    },
+    {
+      "name": "list_stacks",
+      "inputSchema": {
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_apps",
+      "inputSchema": {
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_app",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "ci": {},
+          "healthHistory": {}
+        }
+      }
+    },
+    {
+      "name": "get_app_logs",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "subscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "retry_member",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "stackSubscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "upgrade_stack",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "stackSubscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "delete_app",
+      "inputSchema": {
+        "properties": {
+          "appId": {}
+        }
+      }
+    },
+    {
+      "name": "list_members",
+      "inputSchema": {
+        "properties": {}
+      }
+    },
+    {
+      "name": "invite_member",
+      "inputSchema": {
+        "properties": {
+          "email": {}
+        }
+      }
+    },
+    {
+      "name": "remove_member",
+      "inputSchema": {
+        "properties": {
+          "userId": {}
+        }
+      }
+    },
+    {
+      "name": "accept_invite",
+      "inputSchema": {
+        "properties": {
+          "invite": {}
+        }
+      }
+    },
+    {
+      "name": "send_feedback",
+      "inputSchema": {
+        "properties": {
+          "text": {}
+        }
+      }
+    },
+    {
+      "name": "list_capabilities",
+      "inputSchema": {
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_resource_types",
+      "inputSchema": {
+        "properties": {}
+      }
+    },
+    {
+      "name": "write_resource_type",
+      "inputSchema": {
+        "properties": {
+          "type": {}
+        }
+      }
+    },
+    {
+      "name": "connect_capability",
+      "inputSchema": {
+        "properties": {
+          "capability": {}
+        }
+      }
+    },
+    {
+      "name": "add_capability",
+      "inputSchema": {
+        "properties": {
+          "blockId": {},
+          "params": {}
+        }
+      }
+    },
+    {
+      "name": "upgrade_capability",
+      "inputSchema": {
+        "properties": {
+          "confirmReplacement": {},
+          "params": {},
+          "subscriptionId": {},
+          "targetVersion": {}
+        }
+      }
+    },
+    {
+      "name": "retry_capability",
+      "inputSchema": {
+        "properties": {
+          "subscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "remove_capability",
+      "inputSchema": {
+        "properties": {
+          "subscriptionId": {}
+        }
+      }
+    }
+  ]
+}

@@ -26,7 +26,7 @@ from then on.
 
 | Skill | What it walks you through |
 |---|---|
-| `create-an-app` | Choosing a stack, creating the app and subscribing it to the stack |
+| `create-an-app` | Choosing a stack, creating the app on a new repository or one you already have, and subscribing it to the stack |
 | `build-your-app` | Writing the app's code in its repository and deploying it through a pull request |
 | `connect-mollie-and-sendcloud` | Connecting payments and shipping without the key passing through Claude Code |
 | `check-app-status` | Whether the stack has finished and whether the latest change deployed |
@@ -45,8 +45,30 @@ these checks on every pull request, and you can run them locally the same way:
 claude plugin validate --strict .
 claude plugin validate --strict plugins/mitstack
 scripts/check-plugin-names.sh
+scripts/check-skill-tools.py
 ```
 
 `scripts/check-plugin-names.sh` fails when a plugin's `name` or `displayName`
 contains `claude` or `anthropic` in any case. Anthropic's terms bar its names
 and marks from a third party's product name.
+
+`scripts/check-skill-tools.py` fails when a skill names an MCP tool or a tool
+argument that mitstack's MCP server does not serve, or says that no tool does
+something. A builder following such a skill would call a tool that fails, or
+leave their AI tool for an answer a tool already gives. The check reads each
+tool and its arguments from `scripts/mcp-tools-list.json`, the server's
+`tools/list` answer. In the check, a tool is a code span after "call", or a
+snake_case code span starting with a served tool's first word. A tool's
+arguments are the code spans in the list after its "with", as in:
+
+```text
+Call `create_app` with the app's `name`, the `stackId` and `repo`.
+```
+
+`scripts/mcp-tools-list.json` is written by `scripts/refresh-mcp-tools-list.sh`
+from a checkout of mitstack's platform code, which is private. Run it there
+whenever the server's tools change, and before a skill names a new tool:
+
+```sh
+scripts/refresh-mcp-tools-list.sh <platform checkout>
+```

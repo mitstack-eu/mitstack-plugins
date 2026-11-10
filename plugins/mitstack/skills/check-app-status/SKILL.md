@@ -12,23 +12,39 @@ hosting.
 
 ## The stack subscription
 
-Call `subscription_status` with the `subscriptionId` that `subscribe`
-returned, and `stack: true` for a stack. No tool lists an app's subscriptions,
-so when the id is not in this conversation, ask the builder to open the app's
-page in the console at `https://api.mitstack.dev/apps/<appId>`. Each block's
-card there shows its status.
+Call `get_app` with the `appId`. When the id is not in this conversation,
+`list_apps` lists the org's apps. The answer opens with a plain sentence on the
+app's state, such as "all 6 parts of its stack are ready". It then names the
+app's repository, the clone address and the address the app is live at.
 
-The answer carries a `status` and a `percent`. While the status is `pending`,
-`validating` or `provisioning`, call again about once a minute. Tell the
-builder when the percent moves, rather than on every call.
+Under `stackSubscriptions`, each stack subscription carries a `status` and a
+`progress` that counts its parts that are `active`. Its `children` are the
+parts, one per block, each with its own `status` and `healthVerdict`. While a
+status is `pending`, `validating` or `provisioning`, call again about once a
+minute. Tell the builder when a status or the progress moves, rather than on
+every call.
 
 | Status | What to tell the builder |
 |---|---|
-| `active` | The stack is built, and the app's page shows its repository and address |
-| `failed` | Read them the `failure` text in plain words. On the app's page, the failed block's card has a Troubleshoot button that shows the block's own error, and a Retry button |
-| `upgrading` | The stack is moving to a newer version, so wait as for provisioning |
+| `pending`, `validating` or `provisioning` | The part is still being built, so check again in a minute |
+| `active` | The part is built. Once every part is, the app is live at its address |
+| `failed` | Read them the answer's opening sentence in plain words, then the part's log, below |
+| `upgrading` | The part is moving to a newer version, so wait as for provisioning |
+
+For a failed part, call `get_app_logs` with the `appId` and `subscriptionId`,
+set to the part's `id`, for the newest lines of its log. Once the builder has
+fixed the cause and agrees, call `retry_member` with the `appId` and
+`stackSubscriptionId`, set to the stack subscription's `id`, which retries
+every failed part.
+
+For a part whose health is not `healthy`, call `get_app` with the `appId` and
+`healthHistory`, set to the part's `id`, for its health checks, newest first,
+each with the resource it checked.
 
 ## The latest change
+
+Call `get_app` with the `appId` and `ci: true` for the app's CI records and
+its recent CI jobs, each with the runner it ran on.
 
 On a stack with the `managed-ci` block, such as `web-app-aws`, the build
 reports on each commit as a check named `managed-ci`. In a clone of the app's

@@ -26,6 +26,10 @@ jobs:
           for plugin in plugins/*/; do
             claude plugin validate --strict "$plugin"
           done
+      - name: Test the skill tool check
+        run: scripts/check-skill-tools_test.py
+      - name: Check that the skills name only served tools and arguments
+        run: scripts/check-skill-tools.py
 
   names:
     name: plugin names
