@@ -22,10 +22,11 @@ raise the builder's role.
 
 The blocks reach the builder's own accounts, such as AWS or GitHub, through
 connections the builder makes in mitstack's console, so no key passes through
-this conversation. Call `connect_capability` with the `capability` slug, as
-`list_capabilities` lists it, for the link to that connection's page, and open
-it for the builder. The Connections page at
-https://api.mitstack.dev/connections holds every connection.
+this conversation. The Connections page at
+https://api.mitstack.dev/connections holds every connection. For a service
+such as Mollie or Sendcloud, call `connect_capability` with the `capability`
+slug, as `list_capabilities` lists it, for the link to that one service's
+page, and open it for the builder.
 
 ## Steps
 
@@ -33,12 +34,13 @@ https://api.mitstack.dev/connections holds every connection.
    `description`, and the connections its `capabilitiesToConnect` names, and
    let them pick one. Keep its `id` as the `stackId`.
 2. When no stack holds the blocks the builder wants, call `create_stack` with
-   the stack's `name`, a `category` and the `blockIds`, as `list_blocks` lists them.
-   The console writes `Runs on` as the category of a stack an app runs on. Keep
-   the `id` it returns as the `stackId`.
+   the stack's `name`, a `category` and the `blockIds`, as `list_blocks`
+   lists them. The category is a free label, and the console writes `Runs on`
+   for a stack an app runs on. Keep the `id` it returns as the `stackId`.
 3. Ask whether the app's code is already in a GitHub repository. If it is,
-   note the repository as owner/name. It must be a repository the org's
-   mitstack GitHub App installation reaches.
+   note the repository as owner/name. mitstack reaches a repository through
+   its GitHub App, which the org's GitHub connection installs, so the
+   repository must be one that installation may read.
 4. Call `validate_composition` with the `stackId` and `appName`, the name the
    new app will have. For an app that exists, pass `appId` in place of
    `appName`. When `ok` is false, each entry in `missing` names something the

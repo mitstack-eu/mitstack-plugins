@@ -26,6 +26,7 @@ every call.
 
 | Status | What to tell the builder |
 |---|---|
+| `pending`, `validating` or `provisioning` | The part is still being built, so check again in a minute |
 | `active` | The part is built. Once every part is, the app is live at its address |
 | `failed` | Read them the answer's opening sentence in plain words, then the part's log, below |
 | `upgrading` | The part is moving to a newer version, so wait as for provisioning |
