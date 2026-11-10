@@ -5,8 +5,9 @@ description: Building a mitstack app's code in a clone of its repository and dep
 
 # Build your app and deploy it
 
-You write the app's code yourself, in a clone of the repository mitstack made
-for the app. mitstack sees only what reaches that repository. Each change goes
+You write the app's code yourself, in a clone of the app's repository, either
+the one mitstack made or the builder's own that the app was created on.
+mitstack sees only what reaches that repository. Each change goes
 in through a pull request, and merging it deploys the change through the
 stack's pipeline.
 
@@ -17,10 +18,9 @@ anything.
 
 ## Steps
 
-1. Ask the builder for the repository address. The app's page in the console,
-   at `https://api.mitstack.dev/apps/<appId>`, shows it after `Repository`. No
-   tool returns it. Until mitstack has made it, the page reads "No repository
-   yet — it is provisioned automatically on subscribe."
+1. Call `get_app` with the `appId`, which answers with the clone address of
+   the app's code repository. When it names none yet, the stack is still
+   building it, so follow the work with the check-app-status skill first.
 2. Clone it with `git clone` and work inside the clone. The builder's GitHub
    account needs write access to the repository. Opening and merging pull
    requests is easiest with the GitHub CLI, `gh`, signed in with
