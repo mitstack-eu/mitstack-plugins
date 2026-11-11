@@ -6,9 +6,9 @@ description: Building a mitstack block from the builder's description of what it
 # Build a block
 
 A block is a small web service, its operator, plus a manifest that declares
-what it creates for each app that subscribes. `create_block` writes both into a
-new GitHub repository, the scaffold, which leaves the builder one file to
-write: `resources.go`. `blockverify`, the conformance suite the catalog runs
+what it creates for each app that subscribes. `create_block`, a tool of
+mitstack's MCP server, writes both into a new GitHub repository, the scaffold,
+which leaves the builder one file to write: `resources.go`. `blockverify`, the conformance suite the catalog runs
 before it trusts a block, proves that file.
 
 This skill covers blocks that create GitHub resources, the `github` core. For
@@ -92,13 +92,12 @@ func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.Res
 subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
 account through that helper and never from the request yourself, since the
 place a request carries it can change. It answers `""` when the request
-carries no account. The scaffold already refuses a request with no GitHub
-token before `Ensure` runs, so that leaves a token that arrives with no
-account. The example's `ghapi.SafeRepo` call checks the `owner/name` it is
-handed and rejects one with no owner, so `Ensure` returns that error.
-`ref.Identity` is
-the map `Ensure` returned, which the scaffold hands back to `Observe` and
-`Delete`, and `ref.Desired` is the request itself.
+carries no account. The scaffold refuses a request with no GitHub token before
+`Ensure` runs, so `Ensure` sees an empty account only when a token arrives
+without one. The example's `ghapi.SafeRepo` call then rejects the `owner/name`
+it is handed, since it has no owner, so you need no check of your own.
+`ref.Identity` is the map `Ensure` returned, which the scaffold hands back to
+`Observe` and `Delete`, and `ref.Desired` is the request itself.
 
 | Method | It must |
 |---|---|
