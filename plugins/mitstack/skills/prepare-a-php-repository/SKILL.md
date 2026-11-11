@@ -161,7 +161,7 @@ how to read it. An empty section reads `ok`, unless its row says otherwise.
 | G1 | Schema and existing data | `releaseCommand`, a setting in the Create wizard, is one line of at most 1,000 printable characters, run on each new image before it serves. It can create your schema. No step imports an existing dump or existing files, so an app with data starts empty | Always `note`, in those words. Decide before you go live whether the app can start empty, because mitstack gives you no route for that data yet. A dump of your data that G1 lists: `fix`, naming the one you choose, remove it from the repository with `git rm`, or keep it and add it to `.dockerignore`, since a committed one reaches the image and a root-served app's web. Either way it stays in the git history, which `gitleaks` reads each Monday. A schema file the app reads stays: `note`. Whether your migrations run on the host reads as `not read` |
 | G1 | The database engine | The database is MariaDB 12.3.3. A migration written for MySQL may fail there, a failed `releaseCommand` stops the deploy, and on a first deploy the app does not start | Always `not read`, because only the first deploy runs them |
 | G2 | A foreign key's generated name | MariaDB 12.3.3 names a foreign key created with no name `1`, `2` and so on, where MariaDB 11.8 and 12.0 named it like `comments_ibfk_2`. A migration that drops `comments_ibfk_2` by that name stops on error `1091`, and the deploy stops with it | Any hit: `fix`, look the name up before each drop. Read `CONSTRAINT_NAME` from `information_schema.KEY_COLUMN_USAGE` for the current database, that table and that column, where `REFERENCED_TABLE_NAME` is set, and drop each name it gives |
-| H1, H2, F4 | Secrets | A secret is a value your app reads and nobody should see, which mitstack keeps for the app once it exists. Its name is lower-case letters, digits and hyphens, and it reaches the app upper-cased with underscores, so `app-key` reaches it as `APP_KEY`. A clash with a value the database gives is refused. A variable the app needs at start goes in `.env.example`, which the dry run reads, and its value is saved before the first image lands | An F4 name missing from H1, or any F4 name when `.env.example` is absent, other than a database value the row above covers: `fix`, add it to `.env.example`. A name with lower-case letters: `fix`, since no secret can give it. An H2 file: `fix`, stop committing it. Each F4 and H1 name also takes a line naming where its value comes from, as the part after this table shows |
+| H1, H2, F4 | Secrets | A secret is a value your app reads and nobody should see, which mitstack keeps for the app once it exists. Its name is lower-case letters, digits and hyphens, and it reaches the app upper-cased with underscores, so `app-key` reaches it as `APP_KEY`. A clash with a value the database gives is refused. A variable the app needs at start goes in `.env.example`, which the dry run reads, and its value is saved before the first image lands | An F4 name missing from H1, or any F4 name when `.env.example` is absent, other than a database value the F3 and F4 row covers: `fix`, add it to `.env.example`. A name with lower-case letters: `fix`, since no secret can give it. An H2 file: `fix`, stop committing it. Each F4 and H1 name also takes a line naming where its value comes from, as the part after this table shows |
 | I1 to I7 | Code scan | Seven rules: `php-output-from-request`, `php-sql-from-request`, `php-command-from-request`, `php-code-evaluation`, `php-include-from-request`, `php-unserialize-from-request` and `php-weak-password-hash`. A finding fails the build | Any hit: `fix`. I1: pass the value through `htmlspecialchars()`. I2: bind it with `prepare`. I3: pass it through `escapeshellarg()`, or choose from a fixed list. I4: write the logic as code. I5: choose the file from a fixed list. I6: use `json_decode()`, or pass `['allowed_classes' => false]`. I7: use `password_hash()` and `password_verify()`. These searches read one line, and Semgrep follows a value across lines, so an empty section reads as `not read` |
 | None | Secrets and dependency scans | `gitleaks` reads the tree on each build and the whole history each Monday. Trivy refuses a fixable vulnerability of any severity, and `osv-scanner` refuses what its ignore lists do not hold | Always `not read`, because these need a network or the built image |
 | J1 | Files a scan refuses | `.trivyignore`, `trivy.yaml` and `trivy-secret.yaml` at the root, and an `osv-scanner.toml` ignore of an advisory with a fix | A root Trivy file: `fix`, remove it. An `osv-scanner.toml`: `not read`, since the advisory lookup needs a network |
@@ -178,15 +178,16 @@ how to read it. An empty section reads `ok`, unless its row says otherwise.
 
 Each variable your app reads has one of three sources, and the report's line
 for it names which, with the verdict `note`, or `ok` for a database value.
-Nothing is saved during this procedure, since the app does not exist yet. Once
-it does, the create-an-app skill saves each value through mitstack's MCP
-tools, and nobody pastes a value into the chat.
+Nothing is saved during this procedure, since the app does not exist yet, and
+rule 3 holds throughout it. Once the app exists, the create-an-app skill saves
+each value through mitstack's MCP tools, and nobody pastes a value into the
+chat.
 
 | The value | Where it comes from, once the app exists | The report line's fix |
 |---|---|---|
 | A database value, as the row on F3 and F4 names | The app's database part, `docker-mariadb`, gives it, so nothing is saved | `DB_HOST: the database part gives it` |
 | A key the app needs made once, such as an encryption or signing key | mitstack makes it and shows it to nobody. The AI tool calls `generate_app_secret` with the `appId`, the `name`, `bytes` and `prefix`, which are the byte count and the leading text the app's own code checks the key for | `APP_KEY: generate it as app-key, 32 bytes, prefix base64:, as config.php:8 checks` |
-| A value the builder already holds, such as an outside service's key | The builder's own file or environment. Under the create-an-app skill, the AI tool reads that one value after the builder says yes, and calls `set_app_secret` with the `appId`, the `name` and `value`. By hand, the builder saves it in the Secrets section of the app's page in the console | `SMTP_PASSWORD: set it as smtp-password from your own .env` |
+| A value the builder already holds, such as an outside service's key | The builder's own file or environment. Under the create-an-app skill, the AI tool reads that one variable after the builder says yes, so its provider sees that value, and calls `set_app_secret` with the `appId`, the `name` and `value`. By hand, the builder saves it in the Secrets section of the app's page in the console | `SMTP_PASSWORD: set it as smtp-password from your own .env` |
 
 To tell a key made once from a value the builder holds, find the lines that
 name it with this command, replacing `NAME`. Print each one masked, as rule 2
@@ -207,20 +208,18 @@ sed -n 'LINEp' FILE | grep -oE "['\"][A-Za-z0-9._-]{1,15}:['\"]"
 
 A check that the key starts with that text asks for it as `prefix`. When the
 code checks neither, leave both out, and mitstack draws 32 bytes and stores
-their base64. When you cannot tell where a value comes from, ask the builder.
+their base64. mitstack draws only that form. A key the code wants in another
+form, such as hex, a set count of characters or a prefix this command does not
+show, reads `not read`, and the builder makes it and saves it as a value they
+hold. When you cannot tell where a value comes from, ask the builder.
 
-`list_app_secrets` with the `appId` lists each saved name and its version but
-never a value, so it confirms what is saved. A name the app already holds keeps
-its value, because replacing one is a person's act in the console's Secrets
-section.
-
-A value still missing shows in the failed deploy's reason on the app's page,
-and in the log lines `get_app_logs` returns. Saving it then needs no new
-commit, since the host runs the release command again once it reads the value.
+Once the app exists, `list_app_secrets` confirms each saved name without its
+value. A value still missing shows in the failed deploy's reason and in
+`get_app_logs`, and the create-an-app skill says how to save it then.
 
 Nobody logs in to a host mitstack manages, over SSH or any other way, or edits
-a file there, because mitstack's agent on the host writes the app's environment
-from the saved secrets and replaces any change made by hand.
+a file there, because the host's agent, the program mitstack runs on it, writes
+the app's environment from the saved secrets and replaces any change by hand.
 
 ## Write the report
 
