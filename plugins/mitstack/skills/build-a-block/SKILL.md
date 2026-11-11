@@ -92,9 +92,11 @@ func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.Res
 subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
 account through that helper and never from the request yourself, since the
 place a request carries it can change. It answers `""` when the request
-carries no account, as it does once the org's GitHub connection is gone. The
-example's `ghapi.SafeRepo` call checks the `owner/name` it is handed and
-rejects one with no owner, so `Ensure` returns that error. `ref.Identity` is
+carries no account. The scaffold already refuses a request with no GitHub
+token before `Ensure` runs, so that leaves a token that arrives with no
+account. The example's `ghapi.SafeRepo` call checks the `owner/name` it is
+handed and rejects one with no owner, so `Ensure` returns that error.
+`ref.Identity` is
 the map `Ensure` returned, which the scaffold hands back to `Observe` and
 `Delete`, and `ref.Desired` is the request itself.
 
