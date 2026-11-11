@@ -49,8 +49,9 @@ must show the builder signed in, because the block's repository is private and
    returns.
 3. Clone the repository with `gh repo clone <repo>` and work inside the clone.
    Run step 5 once on the untouched clone. Every suite but `resources` passes,
-   and `resources` fails with a line that holds `observed absent after
-   subscribe` and `want present`, which step 4 fixes.
+   and `resources` fails with a line that holds `and validates for` and `want
+   present`, the first `resources` row of the table under "Reading a
+   failure". Step 4 fixes it.
 4. Write `resources.go` as the next section describes. Edit no other file,
    since the scaffold owns the rest and the suites check it.
 5. Run the suite from the clone's root, at the kit version the block's
@@ -92,14 +93,15 @@ subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
 account through that helper and never from the request yourself, since the
 place a request carries it can change. It answers `""` when the request
 carries no account, as it does once the org's GitHub connection is gone. The
-example's `ghapi.SafeRepo` call then rejects the name, and `Ensure` returns
-that error. `ref.Identity` is the map `Ensure` returned, which the scaffold
-hands back to `Observe` and `Delete`.
+example's `ghapi.SafeRepo` call checks the `owner/name` it is handed and
+rejects one with no owner, so `Ensure` returns that error. `ref.Identity` is
+the map `Ensure` returned, which the scaffold hands back to `Observe` and
+`Delete`, and `ref.Desired` is the request itself.
 
 | Method | It must |
 |---|---|
 | `Ensure` | Derive the name from `d.SubscriptionID`, create the resource only when GitHub answers 404, tag it with `tagRepository(ctx, gh, repo, d.SubscriptionID)`, and return its identity, such as `{"repo": "acme/sub-123-docs"}` |
-| `Observe` | Ask GitHub at `ref.Identity` every time, and answer `contract.Present` with its outputs, or `contract.Absent` on a 404. When `ref.Identity` is empty, because a create failed before `Ensure` returned, read the name `Ensure` would give, as the example's `named` does |
+| `Observe` | Ask GitHub at `ref.Identity` every time, and answer `contract.Present` with its outputs, or `contract.Absent` on a 404. When `ref.Identity` is empty, because a create failed before `Ensure` returned, read the name `Ensure` would give from `ref.Desired`, as the example's `named` does |
 | `Delete` | Delete the resource at `ref.Identity`, and count a 404 as success |
 
 Send every GitHub call through the scaffold's
