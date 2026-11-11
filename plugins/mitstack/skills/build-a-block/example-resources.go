@@ -1,9 +1,6 @@
 package main
 
-// resources.go is the one file you write. Give each resource manifest.yaml
-// declares a type with Ensure, Observe and Delete, and list it in the
-// resources table under the resource's name. The scaffold calls them in the
-// order manifest.yaml declares the resources, and owns everything else.
+// resources.go is the one file you write: a type with Ensure, Observe and Delete for each resource manifest.yaml declares, listed by name in resources.
 
 import (
 	"context"
@@ -12,26 +9,22 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mitstack-eu/operator-kit/v2/contract"
-	"github.com/mitstack-eu/operator-kit/v2/ghapi"
+	"github.com/mitstack-eu/block-kit/capabilities/github/ghapi"
+	"github.com/mitstack-eu/block-kit/contract"
 )
 
-// resources maps each resource manifest.yaml declares, by name, to its code.
 var resources = map[string]githubResource{
 	"github.repository": repository{suffix: "app"},
 }
 
-// repository is a github.repository this block creates in the connected
-// account, named for the subscription and its suffix.
+// repository is a github.repository in the connected account, named for the subscription and its suffix.
 type repository struct {
 	suffix string
 }
 
-// Ensure creates the repository unless an earlier subscribe made it, tags it
-// with the subscription, and returns its identity.
+// Ensure creates the repository unless an earlier subscribe made it, tags it with the subscription, and returns its identity.
 func (r repository) Ensure(ctx context.Context, gh *ghapi.Client, d contract.Desired) (map[string]string, error) {
-	owner := d.Secrets["github"]["owner"]
-	name := strings.ReplaceAll(d.SubscriptionID, "_", "-") + "-" + r.suffix
+	owner, name := r.named(d)
 	repo, err := ghapi.SafeRepo(owner + "/" + name)
 	if err != nil {
 		return nil, err
@@ -58,10 +51,19 @@ func (r repository) Ensure(ctx context.Context, gh *ghapi.Client, d contract.Des
 	return map[string]string{"repo": repo}, nil
 }
 
-// Observe reports the repository at ref.Identity present with its "repo"
-// output, or absent when GitHub answers 404.
-func (repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) (contract.Observation, error) {
-	repo, err := ghapi.SafeRepo(ref.Identity["repo"])
+// named gives the owner and name Ensure creates the repository under.
+func (r repository) named(d contract.Desired) (owner, name string) {
+	return ghapi.Owner(d), strings.ReplaceAll(d.SubscriptionID, "_", "-") + "-" + r.suffix
+}
+
+// Observe reports the repository present with its "repo" output, or absent when GitHub answers 404; with no identity it reads the name Ensure gives, as a create that failed before recording one leaves.
+func (r repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) (contract.Observation, error) {
+	id := ref.Identity["repo"]
+	if id == "" {
+		owner, name := r.named(ref.Desired)
+		id = owner + "/" + name
+	}
+	repo, err := ghapi.SafeRepo(id)
 	if err != nil {
 		return contract.Observation{}, err
 	}
@@ -77,8 +79,7 @@ func (repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.Re
 	return contract.Observation{State: contract.Present, Outputs: map[string]string{"repo": repo}}, nil
 }
 
-// Delete deletes the repository at ref.Identity. A repository already gone is
-// success.
+// Delete deletes the repository at ref.Identity, and one already gone is success.
 func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) error {
 	repo, err := ghapi.SafeRepo(ref.Identity["repo"])
 	if err != nil {

@@ -6,9 +6,9 @@ description: Building a mitstack block from the builder's description of what it
 # Build a block
 
 A block is a small web service, its operator, plus a manifest that declares
-what it creates for each app that subscribes. `create_block` writes both into a
-new GitHub repository, the scaffold, which leaves the builder one file to
-write: `resources.go`. `blockverify`, the conformance suite the catalog runs
+what it creates for each app that subscribes. `create_block`, a tool of
+mitstack's MCP server, writes both into a new GitHub repository, the scaffold,
+which leaves the builder one file to write: `resources.go`. `blockverify`, the conformance suite the catalog runs
 before it trusts a block, proves that file.
 
 This skill covers blocks that create GitHub resources, the `github` core. For
@@ -49,16 +49,17 @@ must show the builder signed in, because the block's repository is private and
    returns.
 3. Clone the repository with `gh repo clone <repo>` and work inside the clone.
    Run step 5 once on the untouched clone. Every suite but `resources` passes,
-   and `resources` fails with `observed absent after subscribe, want present`,
-   which step 4 fixes.
+   and `resources` fails with a line that holds `and validates for` and `want
+   present`, the first `resources` row of the table under "Reading a
+   failure". Step 4 fixes it.
 4. Write `resources.go` as the next section describes. Edit no other file,
    since the scaffold owns the rest and the suites check it.
 5. Run the suite from the clone's root, at the kit version the block's
    `go.mod` requires:
 
    ```sh
-   kit=$(go list -m -f '{{.Version}}' github.com/mitstack-eu/operator-kit/v2)
-   go run "github.com/mitstack-eu/operator-kit/v2/blockverify@$kit" --standalone .
+   kit=$(go list -m -f '{{.Version}}' github.com/mitstack-eu/block-kit)
+   go run "github.com/mitstack-eu/block-kit/verify/blockverify@$kit" --standalone .
    ```
 
    The first run downloads the kit and the Go toolchain it asks for. The block
@@ -83,19 +84,25 @@ of that type:
 
 ```go
 func (r repository) Ensure(ctx context.Context, gh *ghapi.Client, d contract.Desired) (map[string]string, error)
-func (repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) (contract.Observation, error)
+func (r repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) (contract.Observation, error)
 func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) error
 ```
 
 `d` is the subscribe or upgrade request: `d.SubscriptionID` names the
-subscription, and `d.Secrets["github"]["owner"]` is the connected GitHub
-organisation. `ref.Identity` is the map `Ensure` returned, which the scaffold
-hands back to `Observe` and `Delete`.
+subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
+account through that helper and never from the request yourself, since the
+place a request carries it can change. It answers `""` when the request
+carries no account. The scaffold refuses a request with no GitHub token before
+`Ensure` runs, so `Ensure` sees an empty account only when a token arrives
+without one. The example's `ghapi.SafeRepo` call then rejects the `owner/name`
+it is handed, since it has no owner, so you need no check of your own.
+`ref.Identity` is the map `Ensure` returned, which the scaffold hands back to
+`Observe` and `Delete`, and `ref.Desired` is the request itself.
 
 | Method | It must |
 |---|---|
 | `Ensure` | Derive the name from `d.SubscriptionID`, create the resource only when GitHub answers 404, tag it with `tagRepository(ctx, gh, repo, d.SubscriptionID)`, and return its identity, such as `{"repo": "acme/sub-123-docs"}` |
-| `Observe` | Ask GitHub at `ref.Identity` every time, and answer `contract.Present` with its outputs, or `contract.Absent` on a 404 |
+| `Observe` | Ask GitHub at `ref.Identity` every time, and answer `contract.Present` with its outputs, or `contract.Absent` on a 404. When `ref.Identity` is empty, because a create failed before `Ensure` returned, read the name `Ensure` would give from `ref.Desired`, as the example's `named` does |
 | `Delete` | Delete the resource at `ref.Identity`, and count a 404 as success |
 
 Send every GitHub call through the scaffold's
@@ -103,9 +110,9 @@ Send every GitHub call through the scaffold's
 The example's `suffix` field ends each repository's name, so give two
 repositories in one block different suffixes.
 
-Check by reading the code that `Ensure` tags, because blockverify at `v2.3.1`
-passes a block that never does. The tag carries the subscription's id, and it
-is how anything listing one subscription's resources finds this one.
+`Ensure` must tag what it creates, and the `resources` suite fails a block
+that does not. The tag carries the subscription's id, and it is how anything
+listing one subscription's resources finds this one.
 
 The builder writes no credential and no generated value. The GitHub token
 arrives with each call, and the resource's name comes from the subscription.
@@ -122,9 +129,10 @@ text against this table.
 
 | Suite | The line contains | What is wrong | What to change |
 |---|---|---|---|
-| `resources` | `after subscribe, want present` | `Ensure` created nothing, or `Observe` could not find what `Ensure` made | Make `Ensure` create the resource and return its identity, and make `Observe` read GitHub at that identity |
+| `resources` | `and validates for` and `want present` | `Ensure` created nothing, or `Observe` could not find what `Ensure` made | Make `Ensure` create the resource and return its identity, and make `Observe` read GitHub at that identity |
+| `resources` | `untagged:` | `Ensure` created the resource without tagging it | Make `Ensure` tag it with `tagRepository(ctx, gh, repo, d.SubscriptionID)` after the create |
 | `resources` | `still observed present after the provider lost it` | `Observe` reports what `Ensure` did instead of asking GitHub | Make `Observe` call GitHub each time and answer absent on a 404 |
-| `resources` | `after unsubscribe, want absent` | `Delete` returned success but removed nothing | Make `Delete` send GitHub's delete call for the identity, and accept 204 or 404 |
+| `resources` | `after unsubscribe re-sent` | `Delete` returned success but removed nothing | Make `Delete` send GitHub's delete call for the identity, and accept 204 or 404 |
 | `resources` | `has no entry for it` | The `resources` table lacks a resource the manifest declares | Add the resource's name and its type to the `resources` table |
 | `resources` | `with no identity` | `Ensure` returned an empty identity | Return the identity, such as `{"repo": "owner/name"}`, from `Ensure` |
 | `resources` | `did not name it in replaces` | An upgrade made a new resource instead of finding the existing one | Make `Ensure` derive the same name on every call and reuse what it finds |
