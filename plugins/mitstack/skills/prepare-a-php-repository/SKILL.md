@@ -182,17 +182,32 @@ Nothing is saved during this procedure, since the app does not exist yet. Once
 it does, the create-an-app skill saves each value through mitstack's MCP
 tools, and nobody pastes a value into the chat.
 
-| The value | Where it comes from | The report line's fix |
+| The value | Where it comes from, once the app exists | The report line's fix |
 |---|---|---|
 | A database value, as the row on F3 and F4 names | The app's database part, `docker-mariadb`, gives it, so nothing is saved | `DB_HOST: the database part gives it` |
 | A key the app needs made once, such as an encryption or signing key | mitstack makes it and shows it to nobody. The AI tool calls `generate_app_secret` with the `appId`, the `name`, `bytes` and `prefix`, which are the byte count and the leading text the app's own code checks the key for | `APP_KEY: generate it as app-key, 32 bytes, prefix base64:, as config.php:8 checks` |
-| A value the builder already holds, such as an outside service's key | The builder's own file or environment. The AI tool reads it there after the builder says yes, and calls `set_app_secret` with the `appId`, the `name` and `value`. By hand, the builder saves it in the Secrets section of the app's page in the console | `SMTP_PASSWORD: set it as smtp-password from your own .env` |
+| A value the builder already holds, such as an outside service's key | The builder's own file or environment. Under the create-an-app skill, the AI tool reads that one value after the builder says yes, and calls `set_app_secret` with the `appId`, the `name` and `value`. By hand, the builder saves it in the Secrets section of the app's page in the console | `SMTP_PASSWORD: set it as smtp-password from your own .env` |
 
-To find the byte count and the leading text, print the masked line where the
-code checks the key, as rule 2 shows. A check that the key decodes to 32 bytes
-asks for `bytes` of 32, and a check that it starts with `base64:` asks for that
-`prefix`. When the code checks neither, leave both out, and mitstack draws 32
-bytes and stores their base64.
+To tell a key made once from a value the builder holds, find the lines that
+name it with this command, replacing `NAME`. Print each one masked, as rule 2
+shows, and the lines after it when the check sits there:
+
+```sh
+git grep -nIw NAME -- . ':(exclude,glob)**/vendor/**' ':(exclude,glob)**/.env*' | cut -d: -f1,2
+```
+
+A check that the key decodes to 32 bytes asks for `bytes` of 32. The masked
+line hides quoted text, so print a leading text the check compares against
+with this command, which shows only a short quoted text ending in a colon, such
+as `'base64:'`:
+
+```sh
+sed -n 'LINEp' FILE | grep -oE "['\"][A-Za-z0-9._-]{1,15}:['\"]"
+```
+
+A check that the key starts with that text asks for it as `prefix`. When the
+code checks neither, leave both out, and mitstack draws 32 bytes and stores
+their base64. When you cannot tell where a value comes from, ask the builder.
 
 `list_app_secrets` with the `appId` lists each saved name and its version but
 never a value, so it confirms what is saved. A name the app already holds keeps
