@@ -58,12 +58,56 @@ page, and open it for the builder.
    mitstack adds its own files beside the builder's and never deletes the
    repository. Leave out `repo` only when the builder wants a new repository,
    which mitstack then makes.
-8. Call `subscribe` with the `appId`, the `stackId` and `params`, which holds
+8. Save each value the app's code reads at start before the first deploy, as
+   the part below on the app's values shows, since an app missing one fails
+   that deploy.
+9. Call `subscribe` with the `appId`, the `stackId` and `params`, which holds
    each input from step 6 by its name, as in
    `{"releaseCommand": "<the builder's command>"}`. Keep the `subscriptionId`
    it returns.
-9. Follow the work with the check-app-status skill until the status is
-   `active` or `failed`.
+10. Follow the work with the check-app-status skill until the status is
+    `active` or `failed`.
+
+## Give the app its values
+
+A value the app's code reads, such as an environment variable, has one of
+three sources. Find each name the code reads, as the prepare-a-php-repository
+skill's scan lists them, and give each its source:
+
+| The value | Where it comes from | What you do |
+|---|---|---|
+| A database value, such as `DB_HOST` | The app's database part gives it | Nothing, since the stack hands it over |
+| A key the app needs made once, such as an encryption or signing key | mitstack makes it and shows it to nobody, this conversation included | Call `generate_app_secret` with the `appId`, the `name`, `bytes` and `prefix` |
+| A value the builder already holds, such as an outside service's key | The builder's own file or environment | Call `set_app_secret` with the `appId`, the `name` and `value`, read from that file |
+
+A secret's `name` is lower-case letters, digits and hyphens, and it reaches the
+app upper-cased with underscores, so `app-key` reaches it as `APP_KEY`.
+
+Take `bytes` and `prefix` from the app's own code, from the line that checks
+the key. A check that the key decodes to 32 bytes asks for `bytes` of 32, and
+one that the key starts with `base64:` asks for that `prefix`. When the code
+checks neither, leave both out, and mitstack draws 32 bytes and stores their
+base64.
+
+Never ask the builder to paste a value into this conversation, and never write
+one in a message. Ask which file holds it, and after their yes read that one
+line, as `sed -n 's/^SMTP_PASSWORD=//p' .env` does, then pass it as `value`
+without the quotes around it.
+
+Call `list_app_secrets` with the `appId` to confirm what is saved. It lists
+each name and its version but never a value. A name the app already holds
+keeps its value, and the write says so. Replacing one is a person's act, in
+the Secrets section of the app's page in the console.
+
+A value still missing shows in a failed deploy's reason, which `get_app`
+answers, and in the log lines `get_app_logs` returns for the failed part. Save
+the value as above and follow the app again. Saving it updates each part of
+the app's stack that receives the app's secrets, with no new commit. On a
+Docker host, the host then runs the release command again.
+
+Nobody logs in to a host mitstack manages, over SSH or any other way, or edits
+a file there, because mitstack writes the app's environment there from the
+saved secrets and replaces any change made by hand.
 
 ## Once the app is active
 
