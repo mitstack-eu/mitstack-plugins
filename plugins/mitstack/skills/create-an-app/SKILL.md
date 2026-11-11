@@ -73,9 +73,8 @@ page, and open it for the builder.
 Each value the app's code reads, such as an environment variable, has one of
 three sources. For a PHP app, the report the prepare-a-php-repository skill
 writes names each variable and its source. Without that report, ask the
-builder which names the code reads, or find them with `git grep -nIw` in a
-clone. Then give each name its source from this table, where a part is one
-block of the app's stack, as `get_app` lists it.
+builder which names the code reads. Then give each name its source from this
+table. A part is one block of the app's stack, as `get_app` lists it.
 
 | The value | Where it comes from | What you do |
 |---|---|---|
@@ -88,10 +87,18 @@ app upper-cased with underscores. So the variable `APP_KEY` takes the name
 `app-key`, and `SMTP_PASSWORD` takes `smtp-password`.
 
 Take `bytes` and `prefix` from the line of the app's own code that checks the
-key, which `git grep -nIw APP_KEY` finds for `APP_KEY`. A check that the key
-decodes to 32 bytes asks for `bytes` of 32, and one that the key starts with
-`base64:` asks for that `prefix`. When the code checks neither, leave both out,
-and mitstack draws 32 bytes and stores their base64.
+key. In a clone, this command lists the file and line number of each line
+naming `APP_KEY`, and prints no code:
+
+```sh
+git grep -nIw APP_KEY -- . ':(exclude,glob)**/vendor/**' ':(exclude,glob)**/.env*' | cut -d: -f1,2
+```
+
+Read a line it names only with its quoted text masked, as the
+prepare-a-php-repository skill's rule 2 and its prefix command show. A check
+that the key decodes to 32 bytes asks for `bytes` of 32, and one that the key
+starts with `base64:` asks for that `prefix`. When the code checks neither,
+leave both out, and mitstack draws 32 bytes and stores their base64.
 
 mitstack draws a key only in that form, base64 behind an optional prefix. When
 the code wants another, such as hex or a set count of characters, tell the

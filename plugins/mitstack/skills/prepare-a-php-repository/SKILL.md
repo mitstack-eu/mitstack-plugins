@@ -185,7 +185,7 @@ chat.
 
 | The value | Where it comes from, once the app exists | The report line's fix |
 |---|---|---|
-| A database value, as the row on F3 and F4 names | The app's database part, `docker-mariadb`, gives it, so nothing is saved | `DB_HOST: the database part gives it` |
+| A database value, as the row on F3 and F4 names | The app's database part, the block `docker-mariadb` in its stack, gives it, so nothing is saved | `DB_HOST: the database part gives it` |
 | A key the app needs made once, such as an encryption or signing key | mitstack makes it and shows it to nobody. The AI tool calls `generate_app_secret` with the `appId`, the `name`, `bytes` and `prefix`, which are the byte count and the leading text the app's own code checks the key for | `APP_KEY: generate it as app-key, 32 bytes, prefix base64:, as config.php:8 checks` |
 | A value the builder already holds, such as an outside service's key | The builder's own file or environment. Under the create-an-app skill, the AI tool reads that one variable after the builder says yes, so its provider sees that value, and calls `set_app_secret` with the `appId`, the `name` and `value`. By hand, the builder saves it in the Secrets section of the app's page in the console | `SMTP_PASSWORD: set it as smtp-password from your own .env` |
 
