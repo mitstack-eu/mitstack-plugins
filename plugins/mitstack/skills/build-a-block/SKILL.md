@@ -49,8 +49,8 @@ must show the builder signed in, because the block's repository is private and
    returns.
 3. Clone the repository with `gh repo clone <repo>` and work inside the clone.
    Run step 5 once on the untouched clone. Every suite but `resources` passes,
-   and `resources` fails with `observed absent after subscribe, want present`,
-   which step 4 fixes.
+   and `resources` fails with `observed absent after subscribe and validates
+   for 10s, want present`, which step 4 fixes.
 4. Write `resources.go` as the next section describes. Edit no other file,
    since the scaffold owns the rest and the suites check it.
 5. Run the suite from the clone's root, at the kit version the block's
@@ -91,13 +91,13 @@ func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.Res
 subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
 account through that helper and never from the request yourself, since the
 place a request carries it can change. It answers `""` when the org has no
-GitHub connection. `ref.Identity` is the map `Ensure` returned, which the scaffold
-hands back to `Observe` and `Delete`.
+GitHub connection. `ref.Identity` is the map `Ensure` returned, which the
+scaffold hands back to `Observe` and `Delete`.
 
 | Method | It must |
 |---|---|
 | `Ensure` | Derive the name from `d.SubscriptionID`, create the resource only when GitHub answers 404, tag it with `tagRepository(ctx, gh, repo, d.SubscriptionID)`, and return its identity, such as `{"repo": "acme/sub-123-docs"}` |
-| `Observe` | Ask GitHub at `ref.Identity` every time, and answer `contract.Present` with its outputs, or `contract.Absent` on a 404 |
+| `Observe` | Ask GitHub at `ref.Identity` every time, and answer `contract.Present` with its outputs, or `contract.Absent` on a 404. When `ref.Identity` is empty, because a create failed before `Ensure` returned, read the name `Ensure` would give, as the example's `named` does |
 | `Delete` | Delete the resource at `ref.Identity`, and count a 404 as success |
 
 Send every GitHub call through the scaffold's
@@ -105,9 +105,9 @@ Send every GitHub call through the scaffold's
 The example's `suffix` field ends each repository's name, so give two
 repositories in one block different suffixes.
 
-Check by reading the code that `Ensure` tags, because blockverify at `v2.3.1`
-passes a block that never does. The tag carries the subscription's id, and it
-is how anything listing one subscription's resources finds this one.
+`Ensure` must tag what it creates, and the `resources` suite fails a block
+that does not. The tag carries the subscription's id, and it is how anything
+listing one subscription's resources finds this one.
 
 The builder writes no credential and no generated value. The GitHub token
 arrives with each call, and the resource's name comes from the subscription.
@@ -124,16 +124,16 @@ text against this table.
 
 | Suite | The line contains | What is wrong | What to change |
 |---|---|---|---|
-| `resources` | `after subscribe, want present` | `Ensure` created nothing, or `Observe` could not find what `Ensure` made | Make `Ensure` create the resource and return its identity, and make `Observe` read GitHub at that identity |
+| `resources` | `and validates for` and `want present` | `Ensure` created nothing, or `Observe` could not find what `Ensure` made | Make `Ensure` create the resource and return its identity, and make `Observe` read GitHub at that identity |
+| `resources` | `untagged:` | `Ensure` created the resource without tagging it | Make `Ensure` tag it with `tagRepository(ctx, gh, repo, d.SubscriptionID)` after the create |
 | `resources` | `still observed present after the provider lost it` | `Observe` reports what `Ensure` did instead of asking GitHub | Make `Observe` call GitHub each time and answer absent on a 404 |
-| `resources` | `after unsubscribe, want absent` | `Delete` returned success but removed nothing | Make `Delete` send GitHub's delete call for the identity, and accept 204 or 404 |
+| `resources` | `after unsubscribe re-sent` | `Delete` returned success but removed nothing | Make `Delete` send GitHub's delete call for the identity, and accept 204 or 404 |
 | `resources` | `has no entry for it` | The `resources` table lacks a resource the manifest declares | Add the resource's name and its type to the `resources` table |
 | `resources` | `with no identity` | `Ensure` returned an empty identity | Return the identity, such as `{"repo": "owner/name"}`, from `Ensure` |
 | `resources` | `did not name it in replaces` | An upgrade made a new resource instead of finding the existing one | Make `Ensure` derive the same name on every call and reuse what it finds |
 | `resources` | `failed:` | One of the three methods returned an error, quoted after the colon | Fix the call that error names |
 | `resources` | `has no TestDeclaredResources test` | `declared_resources_test.go`, the scaffold's test that drives each resource against the fake GitHub, is missing | Add it back as the scaffold wrote it: `git checkout $(git rev-list --max-parents=0 HEAD) -- declared_resources_test.go` |
 | Several at once | `[build failed]` | The block does not compile | Run `go vet ./...`, fix the first error it names, and run the suite again |
-| Several at once | `[setup failed]` | Go cannot resolve a module | Run `go mod tidy`, then run the suite again |
 | `trust-plumbing` | `has no go.mod` or `is missing manifest.yaml` | The suite ran outside the block's root | Run it from the clone's root |
 | `trust-plumbing` | `redeclares kit-owned symbol` | A function the kit owns is defined again in the block | Delete that function and use the kit's |
 | `trust-plumbing` | `ghapi.Base` or `raw apiBase` | Code builds its own GitHub address | Send every GitHub call through `callGitHub` |
