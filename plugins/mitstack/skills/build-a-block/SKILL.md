@@ -49,8 +49,8 @@ must show the builder signed in, because the block's repository is private and
    returns.
 3. Clone the repository with `gh repo clone <repo>` and work inside the clone.
    Run step 5 once on the untouched clone. Every suite but `resources` passes,
-   and `resources` fails with `observed absent after subscribe and validates
-   for 10s, want present`, which step 4 fixes.
+   and `resources` fails with a line that holds `observed absent after
+   subscribe` and `want present`, which step 4 fixes.
 4. Write `resources.go` as the next section describes. Edit no other file,
    since the scaffold owns the rest and the suites check it.
 5. Run the suite from the clone's root, at the kit version the block's
@@ -83,16 +83,18 @@ of that type:
 
 ```go
 func (r repository) Ensure(ctx context.Context, gh *ghapi.Client, d contract.Desired) (map[string]string, error)
-func (repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) (contract.Observation, error)
+func (r repository) Observe(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) (contract.Observation, error)
 func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.ResourceRef) error
 ```
 
 `d` is the subscribe or upgrade request: `d.SubscriptionID` names the
 subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
 account through that helper and never from the request yourself, since the
-place a request carries it can change. It answers `""` when the org has no
-GitHub connection. `ref.Identity` is the map `Ensure` returned, which the
-scaffold hands back to `Observe` and `Delete`.
+place a request carries it can change. It answers `""` when the request
+carries no account, as it does once the org's GitHub connection is gone. The
+example's `ghapi.SafeRepo` call then rejects the name, and `Ensure` returns
+that error. `ref.Identity` is the map `Ensure` returned, which the scaffold
+hands back to `Observe` and `Delete`.
 
 | Method | It must |
 |---|---|
@@ -134,6 +136,7 @@ text against this table.
 | `resources` | `failed:` | One of the three methods returned an error, quoted after the colon | Fix the call that error names |
 | `resources` | `has no TestDeclaredResources test` | `declared_resources_test.go`, the scaffold's test that drives each resource against the fake GitHub, is missing | Add it back as the scaffold wrote it: `git checkout $(git rev-list --max-parents=0 HEAD) -- declared_resources_test.go` |
 | Several at once | `[build failed]` | The block does not compile | Run `go vet ./...`, fix the first error it names, and run the suite again |
+| Several at once | `[setup failed]` | Go cannot resolve a module | Run `go mod tidy`, then run the suite again |
 | `trust-plumbing` | `has no go.mod` or `is missing manifest.yaml` | The suite ran outside the block's root | Run it from the clone's root |
 | `trust-plumbing` | `redeclares kit-owned symbol` | A function the kit owns is defined again in the block | Delete that function and use the kit's |
 | `trust-plumbing` | `ghapi.Base` or `raw apiBase` | Code builds its own GitHub address | Send every GitHub call through `callGitHub` |
