@@ -37,6 +37,13 @@ fixed the cause and agrees, call `retry_member` with the `appId` and
 `stackSubscriptionId`, set to the stack subscription's `id`, which retries
 every failed part.
 
+When the sentence or the log names a value the app could not find, such as a
+missing key, save that value as the create-an-app skill's part "Give the app
+its values" shows, through `generate_app_secret` or `set_app_secret`. The save
+needs no new commit and no change on the machine the app runs on. Follow the
+app again with `get_app`, and when the part still reads `failed`, call
+`retry_member` as above.
+
 For a part whose health is not `healthy`, call `get_app` with the `appId` and
 `healthHistory`, set to the part's `id`, for its health checks, newest first,
 each with the resource it checked.

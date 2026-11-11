@@ -1,5 +1,5 @@
 {
-  "source": "the tools/list answer of the MCP server code at platform commit 88a8e6b91296d92cae88d2b58285ce9f1b69c0cb",
+  "source": "the tools/list answer of the MCP server code at platform commit a7bffc6a8bfa891765f64019df7fb8f8a0df6cb4",
   "tools": [
     {
       "name": "list_blocks",
@@ -132,6 +132,35 @@
         "properties": {
           "appId": {},
           "subscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "generate_app_secret",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "bytes": {},
+          "name": {},
+          "prefix": {}
+        }
+      }
+    },
+    {
+      "name": "set_app_secret",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "name": {},
+          "value": {}
+        }
+      }
+    },
+    {
+      "name": "list_app_secrets",
+      "inputSchema": {
+        "properties": {
+          "appId": {}
         }
       }
     },

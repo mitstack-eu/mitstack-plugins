@@ -1,6 +1,6 @@
 ---
 name: create-an-app
-description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has. Use when the builder asks to start, create or set up an app on mitstack, or to put their existing repository on mitstack.
+description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing.
 ---
 
 # Create an app on mitstack
@@ -21,8 +21,8 @@ that names a read-only role means an owner or admin has to take the step, or
 raise the builder's role.
 
 The blocks reach the builder's own accounts, such as AWS or GitHub, through
-connections the builder makes in mitstack's console, so no key passes through
-this conversation. The Connections page at
+connections the builder makes in mitstack's console, so no account key passes
+through this conversation. The Connections page at
 https://api.mitstack.dev/connections holds every connection. For a service
 such as Mollie or Sendcloud, call `connect_capability` with the `capability`
 slug, as `list_capabilities` lists it, for the link to that one service's
@@ -58,12 +58,74 @@ page, and open it for the builder.
    mitstack adds its own files beside the builder's and never deletes the
    repository. Leave out `repo` only when the builder wants a new repository,
    which mitstack then makes.
-8. Call `subscribe` with the `appId`, the `stackId` and `params`, which holds
+8. Before the first deploy, save each value the app's code reads at start, as
+   the part "Give the app its values" below shows. An app missing one fails
+   that deploy.
+9. Call `subscribe` with the `appId`, the `stackId` and `params`, which holds
    each input from step 6 by its name, as in
    `{"releaseCommand": "<the builder's command>"}`. Keep the `subscriptionId`
    it returns.
-9. Follow the work with the check-app-status skill until the status is
-   `active` or `failed`.
+10. Follow the work with the check-app-status skill until the status is
+    `active` or `failed`.
+
+## Give the app its values
+
+Each value the app's code reads, such as an environment variable, has one of
+three sources. For a PHP app, the report the prepare-a-php-repository skill
+writes names each variable and its source. Without that report, ask the
+builder which names the code reads. Then give each name its source from this
+table. A part is one block of the app's stack, as `get_app` lists it.
+
+| The value | Where it comes from | What you do |
+|---|---|---|
+| A database value, such as `DB_HOST` | The app's database part, such as `docker-mariadb`, gives it | Nothing, since the stack hands it over |
+| A key the app needs made once, such as an encryption or signing key | mitstack makes it and shows it to nobody, this conversation included | Call `generate_app_secret` with the `appId`, the `name`, `bytes` and `prefix` |
+| A value the builder already holds, such as an outside service's key | The builder's own file or environment | Call `set_app_secret` with the `appId`, the `name` and `value`, read from that file |
+
+A secret's `name` is lower-case letters, digits and hyphens, and it reaches the
+app upper-cased with underscores. So the variable `APP_KEY` takes the name
+`app-key`, and `SMTP_PASSWORD` takes `smtp-password`.
+
+Take `bytes` and `prefix` from the line of the app's own code that checks the
+key. In a clone, this command lists the file and line number of each line
+naming `APP_KEY`, and prints no code:
+
+```sh
+git grep -nIw APP_KEY -- . ':(exclude,glob)**/vendor/**' ':(exclude,glob)**/.env*' | cut -d: -f1,2
+```
+
+Read a line it names only with its quoted text masked, as the
+prepare-a-php-repository skill's rule 2 and its prefix command show. A check
+that the key decodes to 32 bytes asks for `bytes` of 32, and one that the key
+starts with `base64:` asks for that `prefix`. When the code checks neither,
+leave both out, and mitstack draws 32 bytes and stores their base64.
+
+mitstack draws a key only in that form, base64 behind an optional prefix. When
+the code wants another, such as hex or a set count of characters, tell the
+builder. They make that key themselves and save it as a value they hold.
+
+Never ask the builder to paste a value into this conversation, and never write
+one in a message to them. For a value the builder already has, ask to read
+that one variable from the file that holds it, and say that the AI tool's
+provider sees the value it reads. After their yes, read only that line, as
+`sed -n 's/^SMTP_PASSWORD=//p' .env` does for `SMTP_PASSWORD`, and pass it as
+`value` without the quotes around it.
+
+Call `list_app_secrets` with the `appId` to confirm what is saved. It lists
+each name and its version but never a value. A name the app already holds
+keeps its value, and the write says so. Replacing one is a person's act, in
+the Secrets section of the app's page in the console.
+
+A value still missing shows in a failed deploy's reason, which the opening
+sentence of `get_app` gives. It also shows in the log lines `get_app_logs`
+returns with the `appId` and the `subscriptionId` of the part that failed.
+Save the value as above and follow the app with the check-app-status skill.
+Saving it updates each part of the app's stack that receives the app's
+secrets, and the builder needs no new commit.
+
+Nobody logs in to a host mitstack manages, over SSH or any other way, or edits
+a file there, because mitstack writes the app's environment there from the
+saved secrets and replaces any change made by hand.
 
 ## Once the app is active
 
