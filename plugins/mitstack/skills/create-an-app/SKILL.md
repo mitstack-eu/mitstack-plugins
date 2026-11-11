@@ -58,8 +58,8 @@ page, and open it for the builder.
    mitstack adds its own files beside the builder's and never deletes the
    repository. Leave out `repo` only when the builder wants a new repository,
    which mitstack then makes.
-8. Save each value the app's code reads at start before the first deploy, as
-   the part below on the app's values shows, since an app missing one fails
+8. Before the first deploy, save each value the app's code reads at start, as
+   the part "Give the app its values" below shows. An app missing one fails
    that deploy.
 9. Call `subscribe` with the `appId`, the `stackId` and `params`, which holds
    each input from step 6 by its name, as in
@@ -70,9 +70,10 @@ page, and open it for the builder.
 
 ## Give the app its values
 
-A value the app's code reads, such as an environment variable, has one of
-three sources. Find each name the code reads, as the prepare-a-php-repository
-skill's scan lists them, and give each its source:
+Each value the app's code reads, such as an environment variable, has one of
+three sources. The report of the prepare-a-php-repository skill names each
+value and its source. Without that report, ask the builder which names the
+code reads, and give each name its source from this table:
 
 | The value | Where it comes from | What you do |
 |---|---|---|
@@ -90,9 +91,9 @@ checks neither, leave both out, and mitstack draws 32 bytes and stores their
 base64.
 
 Never ask the builder to paste a value into this conversation, and never write
-one in a message. Ask which file holds it, and after their yes read that one
-line, as `sed -n 's/^SMTP_PASSWORD=//p' .env` does, then pass it as `value`
-without the quotes around it.
+one in a message. Ask which file holds a value the builder already has. After
+their yes, read that one line, as `sed -n 's/^SMTP_PASSWORD=//p' .env` does
+for `SMTP_PASSWORD`, and pass it as `value` without the quotes around it.
 
 Call `list_app_secrets` with the `appId` to confirm what is saved. It lists
 each name and its version but never a value. A name the app already holds
