@@ -57,8 +57,8 @@ must show the builder signed in, because the block's repository is private and
    `go.mod` requires:
 
    ```sh
-   kit=$(go list -m -f '{{.Version}}' github.com/mitstack-eu/operator-kit/v2)
-   go run "github.com/mitstack-eu/operator-kit/v2/blockverify@$kit" --standalone .
+   kit=$(go list -m -f '{{.Version}}' github.com/mitstack-eu/block-kit)
+   go run "github.com/mitstack-eu/block-kit/verify/blockverify@$kit" --standalone .
    ```
 
    The first run downloads the kit and the Go toolchain it asks for. The block
@@ -88,8 +88,10 @@ func (repository) Delete(ctx context.Context, gh *ghapi.Client, ref contract.Res
 ```
 
 `d` is the subscribe or upgrade request: `d.SubscriptionID` names the
-subscription, and `d.Secrets["github"]["owner"]` is the connected GitHub
-organisation. `ref.Identity` is the map `Ensure` returned, which the scaffold
+subscription, and `ghapi.Owner(d)` is the connected GitHub account. Read the
+account through that helper and never from the request yourself, since the
+place a request carries it can change. It answers `""` when the org has no
+GitHub connection. `ref.Identity` is the map `Ensure` returned, which the scaffold
 hands back to `Observe` and `Delete`.
 
 | Method | It must |
