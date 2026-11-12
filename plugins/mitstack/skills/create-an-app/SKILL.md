@@ -144,8 +144,8 @@ release command instead.
 
 1. Read the app's code for what the command needs, such as the table, its
    columns and the variable names the code reads. Show the builder the command
-   and what it changes, and run it only after their yes, since it writes on the
-   live app.
+   and what it changes, and run it only after their yes, since a command can
+   change the live app's data.
 2. Call `run_app_command` with the `appId` and the `command`. It answers the
    run's id at once. Leave out `subscriptionId` when one part of the app runs
    commands. On the stack App on a Hetzner Docker host that part is
@@ -167,15 +167,16 @@ that waits for an answer, such as the `mysql` client's own prompt, does not
 work. When the builder asks for such a prompt, say so, and offer a one-line
 command that does their step.
 
-mitstack commits the command's text to the host's repository, whose Git history
-keeps it. It also keeps each run for 90 days, with the command and who ran it.
+mitstack commits the command's text to the host's repository, the private
+GitHub repository the host takes its work from, and Git history keeps it there.
+mitstack also keeps each run for 90 days, with the command and who ran it.
 So the command reads each secret from the app's environment by its variable's
 name, as `getenv("DB_PASSWORD")` does in PHP. Never write a secret value into a
 command or offer to, even one the builder typed into this conversation. Never
-repeat such a value in a message, and never have a command print a secret. A
-secret the command needs that the app does not hold yet, such as a new user's
-password, is saved first as the part "Give the app its values" shows, then
-read by its name.
+repeat such a value in a message, and never have a command print a secret.
+When a command needs a secret the app does not hold yet, such as a new user's
+password, save it first as the part "Give the app its values" shows. The
+command then reads it by its name.
 
 This command is a template. It adds a user to a `users` table with `name` and
 `email` columns, and reads every database value by the names the app's
