@@ -1,5 +1,5 @@
 {
-  "source": "the tools/list answer of the MCP server code at platform commit a7bffc6a8bfa891765f64019df7fb8f8a0df6cb4",
+  "source": "the tools/list answer of the MCP server code at platform commit d2689523e4020fc3d1cf95599baf7dd34ab75e91",
   "tools": [
     {
       "name": "list_blocks",
@@ -132,6 +132,26 @@
         "properties": {
           "appId": {},
           "subscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "run_app_command",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "command": {},
+          "process": {},
+          "subscriptionId": {}
+        }
+      }
+    },
+    {
+      "name": "get_app_run",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "runId": {}
         }
       }
     },
