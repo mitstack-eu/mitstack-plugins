@@ -1,6 +1,6 @@
 ---
 name: create-an-app
-description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing.
+description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing. Use it too when the builder asks to run a one-off admin command in a live app, such as adding a user to its table.
 ---
 
 # Create an app on mitstack
@@ -132,6 +132,63 @@ saved secrets and replaces any change made by hand.
 `get_app` with the `appId` answers with the clone address of the app's code
 repository and the address it is live at. The build-your-app skill takes the
 builder from there to their own code running live.
+
+## Run a command in the app
+
+Some admin steps run once in a live app, such as adding a user to the app's
+own users table. Run such a step through mitstack. It runs the command in a
+fresh container made from the image the app serves, with the app's
+environment, on the machine that runs the app, which mitstack calls the host.
+A step that must run with every deploy, such as a migration, belongs in the
+release command instead.
+
+1. Read the app's code for what the command needs, such as the table, its
+   columns and the variable names the code reads. Show the builder the command
+   and what it changes, and run it only after their yes, since a command can
+   change the live app's data.
+2. Call `run_app_command` with the `appId` and the `command`. It answers the
+   run's id at once. Leave out `subscriptionId` when one part of the app runs
+   commands. On the stack App on a Hetzner Docker host that part is
+   `docker-app-slice`. When the call is refused and lists several parts, call
+   again with `subscriptionId` set to one of them, a part's `id` as `get_app`
+   lists it. Leave out `process`, which names one container of the part,
+   since `docker-app-slice` runs one, `web`, and refuses a run naming another.
+3. The host usually starts the run within about a minute. Call `get_app_run`
+   with the `appId` and the `runId` about every 20 seconds until its `status`
+   reads `succeeded` or `failed`. Then tell the builder the exit code and the
+   output under `result`, which holds at most the output's newest 8 KiB. A run
+   that never reached its end, such as one refused or one the host did not
+   answer within 30 minutes, holds `error` instead, so read that to them.
+
+A part runs one command at a time, and refuses a second while the first runs.
+The command is one line of at most 1,000 printable ASCII characters, and a
+shell runs it, so `&&` and quotes work. Each run gets no input, so a command
+that waits for an answer, such as the `mysql` client's own prompt, does not
+work. When the builder asks for such a prompt, say so, and offer a one-line
+command that does their step.
+
+mitstack commits the command's text to the host's repository, the private
+GitHub repository the host takes its work from, and Git history keeps it there.
+mitstack also keeps each run for 90 days, with the command and who ran it.
+So the command reads each secret from the app's environment by its variable's
+name, as `getenv("DB_PASSWORD")` does in PHP. Never write a secret value into a
+command or offer to, even one the builder typed into this conversation. Never
+repeat such a value in a message, and never have a command print a secret.
+When a command needs a secret the app does not hold yet, such as a new user's
+password, save it first as the part "Give the app its values" shows. The
+command then reads it by its name.
+
+This command is a template. It adds a user to a `users` table with `name` and
+`email` columns, and reads every database value by the names the app's
+database part gives. Put in the app's own table, columns and variable names:
+
+```sh
+php -r '$p=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_NAME"),getenv("DB_USER"),getenv("DB_PASSWORD"));$p->prepare("INSERT INTO users (name,email) VALUES (?,?)")->execute(["Ada","ada@example.com"]);echo "inserted id ",$p->lastInsertId(),PHP_EOL;'
+```
+
+Any member of the org may run a command. A builder without an AI tool runs the
+same command in the Commands panel on the app's page in the console. Nobody
+logs in to the host to run one.
 
 ## When a step is refused
 
