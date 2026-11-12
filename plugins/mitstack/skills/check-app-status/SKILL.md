@@ -1,6 +1,6 @@
 ---
 name: check-app-status
-description: Checking whether a mitstack app's stack has finished building and whether its latest change deployed. Use when the builder asks if their app is live, ready, deployed or broken.
+description: Checking whether a mitstack app's stack has finished building and whether its latest change deployed. Use when the builder asks if their app is live, ready, deployed or broken, or to run a one-off command in a live app, such as adding a user to its database.
 ---
 
 # Check an app's status
@@ -47,6 +47,21 @@ app again with `get_app`, and when the part still reads `failed`, call
 For a part whose health is not `healthy`, call `get_app` with the `appId` and
 `healthHistory`, set to the part's `id`, for its health checks, newest first,
 each with the resource it checked.
+
+## A command in the running app
+
+When the builder needs one admin step in a live app, such as adding a user to
+its table, run it as the create-an-app skill's part "Run a command in the app"
+shows. Call `run_app_command` with the `appId` and the `command`, then
+`get_app_run` with the `appId` and the `runId` it answered, for the exit code
+and output. Nobody logs in to the host for such a step.
+
+Each run gets no input, so a command that waits for an answer does not work,
+such as the `mysql` client's own prompt. Offer a one-line command instead.
+mitstack keeps each run for 90 days with its command and who ran it, and the
+command's text stays in the host's Git history. So the command reads each
+secret from the app's environment by its variable's name, such as
+`DB_PASSWORD`, and never holds the value.
 
 ## The latest change
 

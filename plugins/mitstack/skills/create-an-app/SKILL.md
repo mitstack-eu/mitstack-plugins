@@ -1,6 +1,6 @@
 ---
 name: create-an-app
-description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing.
+description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, to give an app a key or another value it reads, such as one a failed deploy says is missing, or to run a one-off admin command in a live app, such as adding a user to its table.
 ---
 
 # Create an app on mitstack
@@ -132,6 +132,46 @@ saved secrets and replaces any change made by hand.
 `get_app` with the `appId` answers with the clone address of the app's code
 repository and the address it is live at. The build-your-app skill takes the
 builder from there to their own code running live.
+
+## Run a command in the app
+
+Some admin steps run once in a live app, such as adding a user to its table.
+Run such a step through mitstack, which runs the command in a fresh container
+made from the image the app serves, with the app's environment. A step that
+must run with every deploy, such as a migration, belongs in the release command
+instead.
+
+1. Call `run_app_command` with the `appId` and the `command`. It answers the
+   run's id at once. Leave out `subscriptionId` when one part of the app runs
+   commands, as on a Docker host stack. Leave out `process` too, since
+   `docker-app-slice` runs one process, `web`, and refuses a run naming another.
+2. The host usually starts the run within about a minute. Call `get_app_run`
+   with the `appId` and the `runId` until its `status` no longer reads
+   `running`. Then tell the builder the exit code and the output under
+   `result`, which keeps at most the newest 8 KiB.
+
+The command is one line of at most 1,000 printable ASCII characters. Each run
+gets no input, so a command that waits for an answer does not work, such as
+the `mysql` client's own prompt. When the builder asks for such a prompt, say
+so, and offer a one-line command that does their step.
+
+mitstack commits the command's text to the host's repository, whose Git history
+keeps it. It also keeps each run for 90 days, with the command and who ran it.
+So the command reads each secret from the app's environment by its variable's
+name, as `getenv("DB_PASSWORD")` does in PHP. Never write a value into a
+command, even one the builder typed into this conversation, and never have a
+command print a secret.
+
+This command adds a user to a `users` table in the app's own database, and
+reads every database value by its name:
+
+```sh
+php -r '$p=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_NAME"),getenv("DB_USER"),getenv("DB_PASSWORD"));$p->prepare("INSERT INTO users (name,email) VALUES (?,?)")->execute(["Ada","ada@example.com"]);echo "inserted id ",$p->lastInsertId(),PHP_EOL;'
+```
+
+Any member of the org may run a command. A builder without an AI tool runs the
+same command in the Commands panel on the app's page in the console. Nobody
+logs in to the host to run one.
 
 ## When a step is refused
 
