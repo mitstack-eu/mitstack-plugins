@@ -51,17 +51,19 @@ each with the resource it checked.
 ## A command in the running app
 
 When the builder needs one admin step in a live app, such as adding a user to
-its table, run it as the create-an-app skill's part "Run a command in the app"
-shows. Call `run_app_command` with the `appId` and the `command`, then
+the app's own users table, follow the create-an-app skill's part "Run a
+command in the app". It reads the app's code first and asks the builder's yes.
+It then calls `run_app_command` with the `appId` and the `command`, then
 `get_app_run` with the `appId` and the `runId` it answered, for the exit code
-and output. Nobody logs in to the host for such a step.
+and output, or the `error` of a run that never ended. Nobody logs in to the
+host, the machine that runs the app, for such a step.
 
 Each run gets no input, so a command that waits for an answer, such as the
 `mysql` client's own prompt, does not work. Offer a one-line command instead.
 mitstack keeps each run for 90 days with its command and who ran it, and the
 command's text stays in the host's Git history. So the command reads each
 secret from the app's environment by its variable's name, such as
-`DB_PASSWORD`, and never holds the value. When the builder types a value into
+`DB_PASSWORD`, and never holds the value. When the builder types a secret into
 this conversation, never repeat it, and never put it in a command or offer to.
 
 ## The latest change
