@@ -56,8 +56,8 @@ shows. Call `run_app_command` with the `appId` and the `command`, then
 `get_app_run` with the `appId` and the `runId` it answered, for the exit code
 and output. Nobody logs in to the host for such a step.
 
-Each run gets no input, so a command that waits for an answer does not work,
-such as the `mysql` client's own prompt. Offer a one-line command instead.
+Each run gets no input, so a command that waits for an answer, such as the
+`mysql` client's own prompt, does not work. Offer a one-line command instead.
 mitstack keeps each run for 90 days with its command and who ran it, and the
 command's text stays in the host's Git history. So the command reads each
 secret from the app's environment by its variable's name, such as

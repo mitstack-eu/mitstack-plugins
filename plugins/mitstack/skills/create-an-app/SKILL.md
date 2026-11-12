@@ -148,12 +148,12 @@ instead.
 2. The host usually starts the run within about a minute. Call `get_app_run`
    with the `appId` and the `runId` until its `status` no longer reads
    `running`. Then tell the builder the exit code and the output under
-   `result`, which keeps at most the newest 8 KiB.
+   `result`, which holds at most the output's newest 8 KiB.
 
 The command is one line of at most 1,000 printable ASCII characters. Each run
-gets no input, so a command that waits for an answer does not work, such as
-the `mysql` client's own prompt. When the builder asks for such a prompt, say
-so, and offer a one-line command that does their step.
+gets no input, so a command that waits for an answer, such as the `mysql`
+client's own prompt, does not work. When the builder asks for such a prompt,
+say so, and offer a one-line command that does their step.
 
 mitstack commits the command's text to the host's repository, whose Git history
 keeps it. It also keeps each run for 90 days, with the command and who ran it.
