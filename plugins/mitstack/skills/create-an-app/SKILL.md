@@ -1,6 +1,6 @@
 ---
 name: create-an-app
-description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, to give an app a key or another value it reads, such as one a failed deploy says is missing, or to run a one-off admin command in a live app, such as adding a user to its table.
+description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing. Use it too when the builder asks to run a one-off admin command in a live app, such as adding a user to its table.
 ---
 
 # Create an app on mitstack
@@ -159,8 +159,8 @@ mitstack commits the command's text to the host's repository, whose Git history
 keeps it. It also keeps each run for 90 days, with the command and who ran it.
 So the command reads each secret from the app's environment by its variable's
 name, as `getenv("DB_PASSWORD")` does in PHP. Never write a value into a
-command, even one the builder typed into this conversation, and never have a
-command print a secret.
+command or offer to, even one the builder typed into this conversation. Never
+repeat such a value in a message, and never have a command print a secret.
 
 This command adds a user to a `users` table in the app's own database, and
 reads every database value by its name:

@@ -61,7 +61,8 @@ such as the `mysql` client's own prompt. Offer a one-line command instead.
 mitstack keeps each run for 90 days with its command and who ran it, and the
 command's text stays in the host's Git history. So the command reads each
 secret from the app's environment by its variable's name, such as
-`DB_PASSWORD`, and never holds the value.
+`DB_PASSWORD`, and never holds the value. When the builder types a value into
+this conversation, never repeat it, and never put it in a command or offer to.
 
 ## The latest change
 
