@@ -40,3 +40,30 @@ jobs:
         run: scripts/check-plugin-names_test.sh
       - name: Check the plugin names
         run: scripts/check-plugin-names.sh
+
+  record-delivery:
+    name: record delivery
+    needs: [validate, names]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # It pushes the board-synced anchor tag it advances.
+    permissions:
+      contents: write
+    concurrency:
+      group: record-delivery
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # range resolution reads the board-synced tag and history a shallow checkout has neither
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.10'
+
+      - name: Record this push's delivered board keys
+        env:
+          TRACKER_BASE_URL: ${{ vars.TRACKER_BASE_URL }}
+          TRACKER_API_TOKEN: ${{ secrets.TRACKER_API_TOKEN }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: go run github.com/mitstack-eu/plain-delivery/cmd/board-delivery@v0.1.0 --repo . --before "$BEFORE_SHA" --after "$GITHUB_SHA"
