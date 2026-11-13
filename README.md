@@ -73,15 +73,21 @@ whenever the server's tools change, and before a skill names a new tool:
 scripts/refresh-mcp-tools-list.sh <platform checkout>
 ```
 
-Once a pull request merges, the `record delivery` job in
-`.github/workflows/ci.yml` records it on mitstack's own issue board, which is
-not public. An issue key such as `MIT-123` names one issue on that board. When
-you work from such an issue, start the pull request's title with its key, as in
-`MIT-123: summary`. The board then marks the issue Done, its state for finished
-work, once the merge is recorded. A pull request with no key records nothing.
+## How a merge reaches the board
 
-The job reads the subject of each commit the merge adds to `main`. A squash
-merge of a pull request with several commits takes the pull request's title as
-that subject, and a single commit keeps its own. A subject that opens with a
-key moves that issue to Done. A subject that ends in `(refs MIT-123)` only
-references the issue and leaves it open.
+This section is for a maintainer who works from an issue on mitstack's own
+issue board, which is not public. An issue key such as `MIT-123` names one
+issue on that board. A contributor without an issue leaves keys out, and a
+maintainer adds one when the change closes an issue.
+
+After a merge, once both checks pass on `main`, the `record delivery` job in
+`.github/workflows/ci.yml` reads the subject of each commit the merge adds.
+The subject is the first line of a commit message. A subject that starts with a
+key and a colon, as in `MIT-123: summary`, moves that issue to Done, the
+board's state for finished work. A key inside a `(refs MIT-123)` group only
+references the issue and leaves it open. A merge whose subjects name no key
+records nothing.
+
+To close an issue, start each commit's subject with its key. A squash merge of
+a pull request with several commits uses the pull request's title as its
+subject, so start the title with the key as well.
