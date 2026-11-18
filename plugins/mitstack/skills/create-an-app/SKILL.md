@@ -1,6 +1,6 @@
 ---
 name: create-an-app
-description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing. Use it too when the builder asks to run a one-off admin command in a live app, such as adding a user to its table.
+description: Creating an app on mitstack and subscribing it to a stack, from choosing the stack to the app's first live address, on a new repository or one the builder already has, with each value the app's code reads. Use when the builder asks to start, create or set up an app on mitstack, to put their existing repository on mitstack, or to give an app a key or another value it reads, such as one a failed deploy says is missing. Use it too when the builder asks for a step in a live app's data, such as adding a user to its table.
 ---
 
 # Create an app on mitstack
@@ -133,62 +133,58 @@ saved secrets and replaces any change made by hand.
 repository and the address it is live at. The build-your-app skill takes the
 builder from there to their own code running live.
 
-## Run a command in the app
+## A step that runs at each deploy
 
-Some admin steps run once in a live app, such as adding a user to the app's
-own users table. Run such a step through mitstack. It runs the command in a
-fresh container made from the image the app serves, with the app's
-environment, on the machine that runs the app, which mitstack calls the host.
-A step that must run with every deploy, such as a migration, belongs in the
-release command instead.
+A step the app needs in its own data, such as creating its tables or adding
+its first admin user, goes in the app's release command. That command is the
+`releaseCommand` input step 6 asks the builder for, and it is optional, so an
+app that leaves it empty runs no step at all. The host, the machine that runs
+the app, runs it in a fresh container made from each new image, with the app's
+environment. It waits for the app's database to report healthy, and runs the
+command before that image serves. It runs once more whenever the command
+itself changes.
 
-1. Read the app's code for what the command needs, such as the table, its
-   columns and the variable names the code reads. Show the builder the command
-   and what it changes, and run it only after their yes, since a command can
-   change the live app's data.
-2. Call `run_app_command` with the `appId` and the `command`. It answers the
-   run's id at once. Leave out `subscriptionId` when one part of the app runs
-   commands. On the stack App on a Hetzner Docker host that part is
-   `docker-app-slice`. When the call is refused and lists several parts, call
-   again with `subscriptionId` set to one of them, a part's `id` as `get_app`
-   lists it. Leave out `process`, which names one container of the part,
-   since `docker-app-slice` runs one, `web`, and refuses a run naming another.
-3. The host usually starts the run within about a minute. Call `get_app_run`
-   with the `appId` and the `runId` about every 20 seconds until its `status`
-   reads `succeeded` or `failed`. Then tell the builder the exit code and the
-   output under `result`, which holds at most the output's newest 8 KiB. A run
-   that never reached its end, such as one refused or one the host did not
-   answer within 30 minutes, holds `error` instead, so read that to them.
+1. Read the app's code for what the step needs, such as the table, its
+   columns and the variable names the code reads.
+2. Write the step so that a second run changes nothing, because the host runs
+   it again on every new image. A migration tool that skips what it already
+   applied does this, and so does an insert that skips a row already there.
+3. Put the app's migration in front when it needs one, such as
+   `php artisan migrate --force` for Laravel, joined with `&&`, since a shell
+   runs the command.
+4. Show the builder the command and what it changes, and give it as
+   `releaseCommand` in step 9 only after their yes, since it changes the live
+   app's data.
 
-A part runs one command at a time, and refuses a second while the first runs.
-The command is one line of at most 1,000 printable ASCII characters, and a
-shell runs it, so `&&` and quotes work. Each run gets no input, so a command
-that waits for an answer, such as the `mysql` client's own prompt, does not
-work. When the builder asks for such a prompt, say so, and offer a one-line
-command that does their step.
+The command is one line of at most 1,000 printable ASCII characters. It gets
+no input, so a command that waits for an answer, such as the `mysql` client's
+own prompt, does not work. The host stops a command that runs for more than
+15 minutes, and counts it as failed.
+
+A command that fails keeps the app on the image it already serves, and on a
+first deploy the app does not start. The host tries again only on a new image,
+a changed command or a changed value of the app, so fix the cause first.
 
 mitstack commits the command's text to the host's repository, the private
 GitHub repository the host takes its work from, and Git history keeps it there.
-mitstack also keeps each run for 90 days, with the command and who ran it.
 So the command reads each secret from the app's environment by its variable's
 name, as `getenv("DB_PASSWORD")` does in PHP. Never write a secret value into a
 command or offer to, even one the builder typed into this conversation. Never
 repeat such a value in a message, and never have a command print a secret.
-When a command needs a secret the app does not hold yet, such as a new user's
-password, save it first as the part "Give the app its values" shows. The
+When the step needs a secret the app does not hold yet, such as the first
+user's password, save it first as the part "Give the app its values" shows. The
 command then reads it by its name.
 
-This command is a template. It adds a user to a `users` table with `name` and
-`email` columns, and reads every database value by the names the app's
-database part gives. Put in the app's own table, columns and variable names:
+This command is a template. It runs Laravel's migration, then adds a user to
+a `users` table with `name` and `email` columns unless that email is already
+there. It reads every database value by the names the app's database part
+gives. Put in the app's own migration, table, columns and variable names, and
+give every column the table requires a value, such as a password hash, or the
+insert fails and stops the deploy:
 
 ```sh
-php -r '$p=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_NAME"),getenv("DB_USER"),getenv("DB_PASSWORD"));$p->prepare("INSERT INTO users (name,email) VALUES (?,?)")->execute(["Ada","ada@example.com"]);echo "inserted id ",$p->lastInsertId(),PHP_EOL;'
+php artisan migrate --force && php -r '$p=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_NAME"),getenv("DB_USER"),getenv("DB_PASSWORD"));$p->prepare("INSERT INTO users (name,email) SELECT ?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE email=?)")->execute(["Ada","ada@example.com","ada@example.com"]);'
 ```
-
-Any member of the org may run a command. A builder without an AI tool runs the
-same command in the Commands panel on the app's page in the console. Nobody
-logs in to the host to run one.
 
 ## When a step is refused
 
