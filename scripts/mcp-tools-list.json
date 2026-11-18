@@ -1,5 +1,5 @@
 {
-  "source": "the tools/list answer of the MCP server code at platform commit d2689523e4020fc3d1cf95599baf7dd34ab75e91",
+  "source": "the tools/list answer of the MCP server code at platform commit e388bbdaa44d72c376b08f4029c0d940c0344f68",
   "tools": [
     {
       "name": "list_blocks",
@@ -30,10 +30,14 @@
       "name": "validate_composition",
       "inputSchema": {
         "properties": {
+          "action": {},
           "appId": {},
           "appName": {},
           "blockId": {},
-          "stackId": {}
+          "choices": {},
+          "params": {},
+          "stackId": {},
+          "subscriptionId": {}
         }
       }
     },
@@ -62,6 +66,7 @@
         "properties": {
           "appId": {},
           "blockId": {},
+          "choices": {},
           "params": {},
           "stackId": {},
           "suppliedResources": {}
@@ -122,7 +127,18 @@
         "properties": {
           "appId": {},
           "ci": {},
-          "healthHistory": {}
+          "healthHistory": {},
+          "inputs": {}
+        }
+      }
+    },
+    {
+      "name": "change_part_inputs",
+      "inputSchema": {
+        "properties": {
+          "appId": {},
+          "params": {},
+          "subscriptionId": {}
         }
       }
     },
@@ -132,26 +148,6 @@
         "properties": {
           "appId": {},
           "subscriptionId": {}
-        }
-      }
-    },
-    {
-      "name": "run_app_command",
-      "inputSchema": {
-        "properties": {
-          "appId": {},
-          "command": {},
-          "process": {},
-          "subscriptionId": {}
-        }
-      }
-    },
-    {
-      "name": "get_app_run",
-      "inputSchema": {
-        "properties": {
-          "appId": {},
-          "runId": {}
         }
       }
     },
@@ -251,7 +247,9 @@
     {
       "name": "list_capabilities",
       "inputSchema": {
-        "properties": {}
+        "properties": {
+          "inputs": {}
+        }
       }
     },
     {
@@ -272,7 +270,8 @@
       "name": "connect_capability",
       "inputSchema": {
         "properties": {
-          "capability": {}
+          "capability": {},
+          "name": {}
         }
       }
     },
@@ -289,8 +288,10 @@
       "name": "upgrade_capability",
       "inputSchema": {
         "properties": {
+          "acceptDataLoss": {},
           "confirmReplacement": {},
           "params": {},
+          "replace": {},
           "subscriptionId": {},
           "targetVersion": {}
         }
