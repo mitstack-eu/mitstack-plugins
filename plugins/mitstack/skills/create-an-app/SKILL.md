@@ -137,26 +137,33 @@ builder from there to their own code running live.
 
 A step the app needs in its own data, such as creating its tables or adding
 its first admin user, goes in the app's release command. That command is the
-`releaseCommand` input step 6 asks the builder for. On the stack App on a
-Hetzner Docker host its default is `php artisan migrate --force`. The host,
-the machine that runs the app, runs it in a fresh container made from each new
-image, with the app's environment, before that image serves. It runs once more
-whenever the command itself changes.
+`releaseCommand` input step 6 asks the builder for, and it is optional, so an
+app that leaves it empty runs no step at all. The host, the machine that runs
+the app, runs it in a fresh container made from each new image, with the app's
+environment. It waits for the app's database to report healthy, and runs the
+command before that image serves. It runs once more whenever the command
+itself changes.
 
 1. Read the app's code for what the step needs, such as the table, its
    columns and the variable names the code reads.
 2. Write the step so that a second run changes nothing, because the host runs
    it again on every new image. A migration tool that skips what it already
    applied does this, and so does an insert that skips a row already there.
-3. Keep the default's migration in front when the app needs it, joined with
-   `&&`. The builder's command replaces the default, and a shell runs it.
-4. Show the builder the command and what it changes, and save it only after
-   their yes, since it changes the live app's data.
+3. Put the app's migration in front when it needs one, such as
+   `php artisan migrate --force` for Laravel, joined with `&&`, since a shell
+   runs the command.
+4. Show the builder the command and what it changes, and give it as
+   `releaseCommand` in step 9 only after their yes, since it changes the live
+   app's data.
 
 The command is one line of at most 1,000 printable ASCII characters. It gets
 no input, so a command that waits for an answer, such as the `mysql` client's
-own prompt, does not work. A command that fails keeps the app on the image it
-already serves, and on a first deploy the app does not start.
+own prompt, does not work. The host stops a command that runs for more than
+15 minutes, and counts it as failed.
+
+A command that fails keeps the app on the image it already serves, and on a
+first deploy the app does not start. The host tries again only on a new image,
+a changed command or a changed value of the app, so fix the cause first.
 
 mitstack commits the command's text to the host's repository, the private
 GitHub repository the host takes its work from, and Git history keeps it there.
@@ -168,10 +175,12 @@ When the step needs a secret the app does not hold yet, such as the first
 user's password, save it first as the part "Give the app its values" shows. The
 command then reads it by its name.
 
-This command is a template. It runs the default's migration, then adds a user
-to a `users` table with `name` and `email` columns unless that email is already
+This command is a template. It runs Laravel's migration, then adds a user to
+a `users` table with `name` and `email` columns unless that email is already
 there. It reads every database value by the names the app's database part
-gives. Put in the app's own table, columns and variable names:
+gives. Put in the app's own migration, table, columns and variable names, and
+give every column the table requires a value, such as a password hash, or the
+insert fails and stops the deploy:
 
 ```sh
 php artisan migrate --force && php -r '$p=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_NAME"),getenv("DB_USER"),getenv("DB_PASSWORD"));$p->prepare("INSERT INTO users (name,email) SELECT ?,? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE email=?)")->execute(["Ada","ada@example.com","ada@example.com"]);'
